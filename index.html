@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <!-- ============ Document Meta ============ -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0B1220">
+  <meta name="color-scheme" content="dark">
+
+  <!-- ============ Primary SEO ============ -->
+  <title>MH AI Academy | ابدأ رحلتك في البرمجة والذكاء الاصطناعي</title>
+  <meta name="description" content="MH AI Academy — منصة Mohamed Hany التعليمية لتعليم البرمجة والذكاء الاصطناعي لطلاب الصف الأول والثاني الثانوي (نظام البكالوريا). شرح مبسّط، متابعة مستمرة، مراجعات واختبارات، ومشروعات عملية.">
+  <meta name="keywords" content="MH AI Academy, Mohamed Hany, برمجة, ذكاء اصطناعي, بايثون, Python, الصف الأول الثانوي, الصف الثاني الثانوي, نظام البكالوريا, كورسات برمجة, تعليم البرمجة">
+  <meta name="author" content="Mohamed Hany">
+  <meta name="robots" content="index, follow">
+  <meta name="language" content="Arabic">
+  <meta name="geo.region" content="EG">
+  <link rel="canonical" href="https://mhaiacademy.com/">
+
+  <!-- ============ Open Graph ============ -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ar_AR">
+  <meta property="og:site_name" content="MH AI Academy">
+  <meta property="og:title" content="MH AI Academy | ابدأ رحلتك في البرمجة والذكاء الاصطناعي">
+  <meta property="og:description" content="منصة تعليمية متخصصة في البرمجة والذكاء الاصطناعي لطلاب الصف الأول والثاني الثانوي — نظام البكالوريا.">
+  <meta property="og:url" content="https://mhaiacademy.com/">
+  <meta property="og:image" content="https://mhaiacademy.com/assets/mascot.png">
+  <meta property="og:image:alt" content="MH AI Academy Mascot">
+
+  <!-- ============ Twitter Card ============ -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MH AI Academy | ابدأ رحلتك في البرمجة والذكاء الاصطناعي">
+  <meta name="twitter:description" content="منصة تعليمية متخصصة في البرمجة والذكاء الاصطناعي لطلاب الصف الأول والثاني الثانوي — نظام البكالوريا.">
+  <meta name="twitter:image" content="https://mhaiacademy.com/assets/mascot.png">
+
+  <!-- ============ Favicon ============ -->
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="apple-touch-icon" href="assets/mascot.png">
+
+  <!-- ============ Fonts (Cairo — Arabic Typography) ============ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- ============ Performance: Preload LCP asset + styles ============ -->
+  <link rel="preload" as="image" href="assets/mascot.png" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- ============ Structured Data ============ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "MH AI Academy",
+    "url": "https://mhaiacademy.com/",
+    "logo": "https://mhaiacademy.com/assets/logo.svg",
+    "description": "منصة تعليمية متخصصة في تعليم البرمجة والذكاء الاصطناعي لطلاب الصف الأول والثاني الثانوي — نظام البكالوريا.",
+    "founder": {
+      "@type": "Person",
+      "name": "Mohamed Hany"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+20-155-551-0920",
+      "contactType": "customer service",
+      "availableLanguage": ["Arabic"]
+    }
+  }
+  </script>
+
+  <!-- ============ Scripts (non render-blocking) ============ -->
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+  <!-- Accessibility: skip to content -->
+  <a class="skip-link" href="#main">تخطَّ إلى المحتوى الرئيسي</a>
+
+  <!-- ============ Animated Futuristic Background (Pure CSS) ============ -->
+  <div class="bg" aria-hidden="true">
+    <div class="bg-gradient"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="particles">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- ============ Header / Navigation ============ -->
+  <header class="site-header" id="siteHeader">
+    <nav class="nav container" aria-label="التنقل الرئيسي">
+      <a href="#home" class="nav-logo" aria-label="MH AI Academy — الرئيسية">
+        <img src="assets/logo.svg" alt="MH AI Academy" width="180" height="44">
+      </a>
+
+      <button class="nav-toggle" id="navToggle" aria-label="فتح القائمة" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#home" class="nav-link active">الرئيسية</a></li>
+        <li><a href="#features" class="nav-link">المميزات</a></li>
+        <li><a href="#register" class="nav-link">التسجيل</a></li>
+        <li><a href="#whatsapp-groups" class="nav-link">جروبات الواتساب</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- ============ Hero Section ============ -->
+    <section id="home" class="hero" aria-labelledby="heroTitle">
+      <div class="container hero-grid">
+        <div class="hero-content reveal">
+          <span class="hero-badge"><span class="dot"></span> منصة البرمجة والذكاء الاصطناعي للثانوية العامة</span>
+          <h1 class="hero-title" id="heroTitle">
+            ابدأ رحلتك في البرمجة <span class="gradient-text">والذكاء الاصطناعي</span>
+          </h1>
+          <p class="hero-subtitle">
+            لطلاب الصف الأول والثاني الثانوي<br>
+            نظام البكالوريا
+          </p>
+          <div class="hero-actions">
+            <a href="#register" class="btn btn-primary btn-glow">سجل الآن</a>
+            <a href="https://wa.me/2015555109204" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-glow">
+              <img src="assets/icons/whatsapp.svg" alt="" width="22" height="22">
+              تواصل عبر واتساب
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal">
+          <div class="mascot-wrap">
+            <span class="mascot-glow" aria-hidden="true"></span>
+            <!-- Place the mascot PNG here -->
+            <img src="assets/mascot.png" alt="MH AI Academy Mascot — مطور شاب يحمل لابتوب هولوجرامي يعرض أكواد بايثون" class="mascot" width="815" height="951" fetchpriority="high" decoding="async">
+            <span class="chip chip-1" aria-hidden="true"><img src="assets/icons/python.svg" alt="" width="32" height="32"></span>
+            <span class="chip chip-2" aria-hidden="true"><img src="assets/icons/ai.svg" alt="" width="30" height="30"></span>
+            <span class="chip chip-3" aria-hidden="true"><img src="assets/icons/robot.svg" alt="" width="28" height="28"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Features Section ============ -->
+    <section id="features" class="section" aria-labelledby="featuresTitle">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2 class="section-title" id="featuresTitle">لماذا <span class="gradient-text">MH AI Academy</span>؟</h2>
+          <p class="section-desc">منظومة تعليمية متكاملة صُممت لتجعل البرمجة والذكاء الاصطناعي سهلة وممتعة لطلاب الثانوية العامة.</p>
+        </div>
+
+        <div class="features-grid">
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon"><img src="assets/icons/python.svg" alt="" width="30" height="30" loading="lazy"></div>
+            <h3>البرمجة من الصفر</h3>
+            <p>تعلّم أساسيات البرمجة بلغة Python خطوة بخطوة، من أول سطر كود حتى بناء برامج كاملة بنفسك.</p>
+          </article>
+
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon"><img src="assets/icons/ai.svg" alt="" width="30" height="30" loading="lazy"></div>
+            <h3>الذكاء الاصطناعي</h3>
+            <p>افهم مفاهيم الذكاء الاصطناعي وتعلّم الآلة بأسلوب عملي، وطبّقها في تجارب ومشروعات حقيقية.</p>
+          </article>
+
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon"><img src="assets/icons/student.svg" alt="" width="30" height="30" loading="lazy"></div>
+            <h3>شرح مبسط وسهل</h3>
+            <p>أسلوب شرح واضح وسلس مصمم خصيصًا لطلاب الثانوية العامة، بعيدًا عن أي تعقيد أو حشو.</p>
+          </article>
+
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon"><img src="assets/icons/check.svg" alt="" width="30" height="30" loading="lazy"></div>
+            <h3>متابعة مستمرة</h3>
+            <p>متابعة دورية لمستواك، تصحيح الواجبات، وإجابة عن كل أسئلتك أولًا بأول طوال العام الدراسي.</p>
+          </article>
+
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon"><img src="assets/icons/graduation.svg" alt="" width="30" height="30" loading="lazy"></div>
+            <h3>مراجعات واختبارات</h3>
+            <p>مراجعات نهائية مركزة واختبارات دورية على كل جزء تضمن تفوقك في مادة البرمجة بثقة.</p>
+          </article>
+
+          <article class="feature-card glass-card reveal">
+            <div class="feature-icon"><img src="assets/icons/robot.svg" alt="" width="30" height="30" loading="lazy"></div>
+            <h3>تطبيقات ومشروعات</h3>
+            <p>نفّذ تطبيقات ومشروعات عملية بنفسك تُثري ملفك الشخصي وتجهّزك لسوق العمل من الآن.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Registration Section ============ -->
+    <section id="register" class="section" aria-labelledby="registerTitle">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2 class="section-title" id="registerTitle">سجّل <span class="gradient-text">الآن</span></h2>
+          <p class="section-desc">املأ البيانات التالية وسيتواصل معك فريق MH AI Academy لتأكيد اشتراكك.</p>
+        </div>
+
+        <div class="register-card glass-card reveal">
+          <form id="registrationForm" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="fullName">الاسم بالكامل</label>
+                <input type="text" id="fullName" name="fullName" class="form-input" placeholder="اكتب اسمك الثلاثي" autocomplete="name" aria-describedby="fullNameError">
+                <p class="error-message" id="fullNameError" role="alert"></p>
+              </div>
+
+              <div class="form-group">
+                <label for="phone">رقم الهاتف</label>
+                <input type="tel" id="phone" name="phone" class="form-input" placeholder="01xxxxxxxxx" inputmode="numeric" maxlength="11" autocomplete="tel" aria-describedby="phoneError">
+                <p class="error-message" id="phoneError" role="alert"></p>
+              </div>
+
+              <div class="form-group">
+                <label for="grade">الصف الدراسي</label>
+                <select id="grade" name="grade" class="form-input" required aria-describedby="gradeError">
+                  <option value="" disabled selected>اختر الصف الدراسي</option>
+                  <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
+                  <option value="الصف الثاني الثانوي">الصف الثاني الثانوي</option>
+                </select>
+                <p class="error-message" id="gradeError" role="alert"></p>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-glow btn-block" id="submitBtn">
+                <span class="btn-label">تسجيل الآن</span>
+                <span class="btn-loader" aria-hidden="true"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ WhatsApp Groups Section ============ -->
+    <section id="whatsapp-groups" class="section" aria-labelledby="groupsTitle">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2 class="section-title" id="groupsTitle">انضم إلى <span class="gradient-text">جروبات الواتساب</span></h2>
+          <p class="section-desc">اختر جروب صفّك لتصلك مواعيد الحصص والواجبات وكل الإعلانات فورًا.</p>
+        </div>
+
+        <div class="groups-grid">
+          <article class="group-card glass-card reveal">
+            <div class="group-icon"><img src="assets/icons/whatsapp.svg" alt="" width="32" height="32" loading="lazy"></div>
+            <h3>🟢 جروب الصف الأول الثانوي</h3>
+            <p>للتواصل، مواعيد الحصص، الواجبات، والإعلانات الخاصة بالصف الأول الثانوي.</p>
+            <a href="https://chat.whatsapp.com/J5g2m1zWvvrAAZLVmbSeU4?s=cl&amp;p=a&amp;mlu=0" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-glow">
+              <img src="assets/icons/whatsapp.svg" alt="" width="20" height="20">
+              انضم الآن
+            </a>
+          </article>
+
+          <article class="group-card glass-card reveal">
+            <div class="group-icon"><img src="assets/icons/whatsapp.svg" alt="" width="32" height="32" loading="lazy"></div>
+            <h3>🟢 جروب الصف الثاني الثانوي</h3>
+            <p>للتواصل، مواعيد الحصص، الواجبات، والإعلانات الخاصة بالصف الثاني الثانوي.</p>
+            <a href="https://chat.whatsapp.com/BGL3PanNGsbKVMV8FS7BRR?s=cl&amp;p=a&amp;mlu=0" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-glow">
+              <img src="assets/icons/whatsapp.svg" alt="" width="20" height="20">
+              انضم الآن
+            </a>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Footer ============ -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <img src="assets/logo.svg" alt="MH AI Academy" width="180" height="44" loading="lazy">
+        <p>منصة تعليمية متخصصة في البرمجة والذكاء الاصطناعي لطلاب الثانوية العامة — نظام البكالوريا.</p>
+      </div>
+      <div class="footer-contact">
+        <a href="tel:+201559160083" class="footer-link">
+          <img src="assets/icons/phone.svg" alt="" width="20" height="20" loading="lazy">
+          <span class="num">01559160083</span>
+        </a>
+        <a href="https://wa.me/2015555109204" target="_blank" rel="noopener noreferrer" class="footer-link">
+          <img src="assets/icons/whatsapp.svg" alt="" width="20" height="20" loading="lazy">
+          <span class="num">01555109204</span>
+        </a>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>© 2026 <span class="brand">Mohamed Hany</span>. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ============ Floating WhatsApp Button ============ -->
+  <a href="https://wa.me/2015555109204" target="_blank" rel="noopener noreferrer" class="whatsapp-float" aria-label="تواصل عبر واتساب">
+    <img src="assets/icons/whatsapp.svg" alt="" width="30" height="30">
+    <span class="float-tooltip" role="tooltip">تواصل عبر واتساب</span>
+  </a>
+
+  <!-- ============ Back To Top ============ -->
+  <button type="button" class="back-to-top" id="backToTop" aria-label="العودة إلى الأعلى">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+  </button>
+
+  <!-- ============ Success Modal ============ -->
+  <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successTitle" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-icon success-icon" aria-hidden="true">
+        <svg class="check-svg" viewBox="0 0 52 52" fill="none">
+          <circle class="check-circle" cx="26" cy="26" r="24" stroke="#00C2FF" stroke-width="3"/>
+          <path class="check-mark" d="M15 27l7 7 15-16" stroke="#00C2FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3 id="successTitle">تم التسجيل بنجاح!</h3>
+      <p>شكرًا لتسجيلك في <strong>MH AI Academy</strong>. تم استلام بياناتك وسنتواصل معك قريبًا عبر واتساب.</p>
+      <button type="button" class="btn btn-primary btn-glow" data-close-modal>حسنًا</button>
+    </div>
+  </div>
+
+  <!-- ============ Error Modal ============ -->
+  <div class="modal-overlay" id="errorModal" role="dialog" aria-modal="true" aria-labelledby="errorTitle" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-icon error-icon" aria-hidden="true">!</div>
+      <h3 id="errorTitle">حدث خطأ أثناء الإرسال</h3>
+      <p>تعذّر إرسال بياناتك. تأكد من اتصالك بالإنترنت ثم حاول مرة أخرى.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary btn-glow" id="retryBtn">إعادة المحاولة</button>
+        <button type="button" class="btn btn-ghost" data-close-modal>إلغاء</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
