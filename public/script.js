@@ -23,10 +23,24 @@ const MHAcademy = (() => {
     gradeRequired: 'من فضلك اختر الصف الدراسي.'
   };
 
+  // Grade → WhatsApp group mapping (memory only — never persisted).
+  const GRADE_GROUPS = {
+    'الصف الأول الثانوي': {
+      joinText: '🚀 الانضمام إلى جروب الصف الأول الثانوي',
+      url: 'https://chat.whatsapp.com/J5g2m1zWvvrAAZLVmbSeU4?s=cl&p=a&mlu=0'
+    },
+    'الصف الثاني الثانوي': {
+      joinText: '🚀 الانضمام إلى جروب الصف الثاني الثانوي',
+      url: 'https://chat.whatsapp.com/BGL3PanNGsbKVMV8FS7BRR?s=cl&p=a&mlu=0'
+    }
+  };
+
   /* ==================== State & DOM cache ==================== */
   const state = {
     isSubmitting: false,   // Guards against duplicate submissions.
-    lastSubmission: null   // Kept for the "retry" flow after a network error.
+    lastSubmission: null,  // Kept for the "retry" flow after a network error.
+    selectedGrade: null,   // In-memory only; reset on page refresh.
+    isRegistered: false
   };
 
   const dom = {};
@@ -50,10 +64,15 @@ const MHAcademy = (() => {
     dom.grade = $('#grade');
     dom.formFields = [dom.fullName, dom.phone, dom.grade];
     dom.submitBtn = $('#submitBtn');
+    dom.submitBtnLabel = $('#submitBtn .btn-label');
+    dom.formSuccessMessage = $('#formSuccessMessage');
     dom.successModal = $('#successModal');
+    dom.successJoinBtn = $('#successJoinBtn');
     dom.errorModal = $('#errorModal');
     dom.retryBtn = $('#retryBtn');
     dom.modalOverlays = $$('.modal-overlay');
+    dom.whatsappSection = $('#whatsapp-groups');
+    dom.groupCards = $$('.group-card[data-grade]');
   };
 
   /* ==================== Header state + back-to-top visibility ==================== */
@@ -105,6 +124,9 @@ const MHAcademy = (() => {
       const target = document.querySelector(hash);
       if (!target) return;
 
+      // Skip hidden sections (e.g. #whatsapp-groups before registration).
+      if (target.hasAttribute('hidden') || target.style.display === 'none') return;
+
       event.preventDefault();
       closeMobileNav();
       target.scrollIntoView({
@@ -146,6 +168,19 @@ const MHAcademy = (() => {
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
     dom.revealItems.forEach((el) => observer.observe(el));
+  };
+
+  // Manual reveal helper for elements shown after initial page load.
+  const revealElement = (el) => {
+    if (!el) return;
+    if (prefersReducedMotion()) {
+      el.classList.add('visible');
+      return;
+    }
+    // Force a reflow so the transition plays even if 'visible' was toggled off.
+    el.classList.remove('visible');
+    void el.offsetWidth;
+    requestAnimationFrame(() => el.classList.add('visible'));
   };
 
   /* ==================== Button ripple (delegated, self-cleaning) ==================== */
@@ -265,8 +300,34 @@ const MHAcademy = (() => {
     dom.formFields.forEach((field) => { field.disabled = isSending; });
   };
 
+  // Lock the form permanently after a successful registration.
+  const lockFormAsRegistered = () => {
+    state.isRegistered = true;
+    dom.formFields.forEach((field) => { field.disabled = true; });
+    dom.submitBtn.disabled = true;
+    dom.submitBtn.classList.remove('loading');
+    dom.submitBtn.setAttribute('aria-busy', 'false');
+    if (dom.submitBtnLabel) dom.submitBtnLabel.textContent = '✅ تم التسجيل بنجاح';
+    if (dom.formSuccessMessage) {
+      dom.formSuccessMessage.hidden = false;
+      dom.formSuccessMessage.textContent = 'تم تسجيل بياناتك بنجاح ويمكنك الآن الانضمام إلى جروب الواتساب الخاص بك.';
+    }
+  };
+
+  // Configure the Success Modal's single dynamic WhatsApp button for the selected grade.
+  const configureSuccessJoinButton = (grade) => {
+    const group = GRADE_GROUPS[grade];
+    if (!group || !dom.successJoinBtn) return;
+    dom.successJoinBtn.href = group.url;
+    dom.successJoinBtn.setAttribute('target', '_blank');
+    dom.successJoinBtn.setAttribute('rel', 'noopener noreferrer');
+    const label = dom.successJoinBtn.querySelector('.btn-label') || dom.successJoinBtn;
+    label.textContent = group.joinText;
+    dom.successJoinBtn.setAttribute('aria-label', group.joinText);
+  };
+
   const submitRegistration = async (data) => {
-    if (state.isSubmitting) return; // Prevent duplicate submissions.
+    if (state.isSubmitting || state.isRegistered) return; // Prevent duplicate submissions.
 
     state.isSubmitting = true;
     state.lastSubmission = data;
@@ -274,21 +335,23 @@ const MHAcademy = (() => {
 
     try {
       await sendRegistration(data);
-      dom.form.reset();
-      dom.formFields.forEach(clearFieldError);
+      state.selectedGrade = data.grade;
+      configureSuccessJoinButton(data.grade);
+      lockFormAsRegistered();
       openModal(dom.successModal);
     } catch (error) {
       openModal(dom.errorModal);
     } finally {
       state.isSubmitting = false;
-      setSubmitting(false);
+      // Only re-enable submit button on failure — on success the form is locked.
+      if (!state.isRegistered) setSubmitting(false);
     }
   };
 
   const initForm = () => {
     dom.form.addEventListener('submit', (event) => {
       event.preventDefault();
-      if (state.isSubmitting || !validateForm()) return;
+      if (state.isSubmitting || state.isRegistered || !validateForm()) return;
 
       submitRegistration({
         fullName: dom.fullName.value.trim(),
@@ -313,6 +376,43 @@ const MHAcademy = (() => {
     });
   };
 
+  /* ==================== WhatsApp section reveal ==================== */
+  const revealWhatsappSection = (grade) => {
+    if (!dom.whatsappSection || !grade) return;
+
+    // Reveal the section itself.
+    dom.whatsappSection.hidden = false;
+    dom.whatsappSection.style.display = '';
+
+    // Show only the matching card; hide the other entirely.
+    let visibleCard = null;
+    dom.groupCards.forEach((card) => {
+      const match = card.dataset.grade === grade;
+      card.style.display = match ? '' : 'none';
+      if (match) visibleCard = card;
+    });
+
+    // Play the existing fade-up animation on the section head and the visible card.
+    dom.whatsappSection.querySelectorAll('.reveal').forEach((el) => {
+      if (el.style.display !== 'none') revealElement(el);
+    });
+
+    // Smooth scroll to the section, then focus its Join button.
+    requestAnimationFrame(() => {
+      dom.whatsappSection.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'start'
+      });
+      if (visibleCard) {
+        const focusTarget = visibleCard.querySelector('.btn');
+        if (focusTarget) {
+          // Delay focus until the smooth scroll settles.
+          setTimeout(() => focusTarget.focus({ preventScroll: true }), prefersReducedMotion() ? 0 : 500);
+        }
+      }
+    });
+  };
+
   /* ==================== Modals ==================== */
   let lastFocusedElement = null;
 
@@ -321,7 +421,7 @@ const MHAcademy = (() => {
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    const focusTarget = modal.querySelector('button');
+    const focusTarget = modal.querySelector('a, button');
     if (focusTarget) focusTarget.focus();
   };
 
@@ -353,6 +453,20 @@ const MHAcademy = (() => {
       closeModal(dom.errorModal);
       if (state.lastSubmission) submitRegistration(state.lastSubmission);
     });
+
+    // Success Modal Join button: opens WhatsApp in a new tab, then closes the
+    // modal and reveals the WhatsApp section with the selected grade's card.
+    if (dom.successJoinBtn) {
+      dom.successJoinBtn.addEventListener('click', () => {
+        // The <a target="_blank"> opens WhatsApp natively — we only handle UI state.
+        const grade = state.selectedGrade;
+        // Defer closing so the browser processes the anchor navigation first.
+        setTimeout(() => {
+          closeModal(dom.successModal);
+          revealWhatsappSection(grade);
+        }, 0);
+      });
+    }
   };
 
   /* ==================== Bootstrap ==================== */

@@ -103,7 +103,6 @@
         <li><a href="#home" class="nav-link active">الرئيسية</a></li>
         <li><a href="#features" class="nav-link">المميزات</a></li>
         <li><a href="#register" class="nav-link">التسجيل</a></li>
-        <li><a href="#whatsapp-groups" class="nav-link">جروبات الواتساب</a></li>
       </ul>
     </nav>
   </header>
@@ -199,6 +198,14 @@
           <p class="section-desc">املأ البيانات التالية وسيتواصل معك فريق MH AI Academy لتأكيد اشتراكك.</p>
         </div>
 
+        <!-- Registration Instructions — Premium Glass Information Card -->
+        <div class="register-card glass-card reveal register-instructions" role="note" aria-labelledby="registerInstructionsTitle" style="margin-bottom: 24px;">
+          <h3 id="registerInstructionsTitle" style="margin-bottom: 12px;">📢 تعليمات التسجيل</h3>
+          <p style="color: var(--text-secondary); line-height: 1.9;">
+            يرجى تسجيل بياناتك أولًا، وبعد نجاح التسجيل سيظهر لك جروب الواتساب الخاص بالصف الذي اخترته ويمكنك الانضمام إليه مباشرة.
+          </p>
+        </div>
+
         <div class="register-card glass-card reveal">
           <form id="registrationForm" novalidate>
             <div class="form-grid">
@@ -228,14 +235,17 @@
                 <span class="btn-label">تسجيل الآن</span>
                 <span class="btn-loader" aria-hidden="true"></span>
               </button>
+
+              <p class="form-success-message" id="formSuccessMessage" role="status" aria-live="polite" hidden
+                 style="margin-top: 14px; text-align: center; color: var(--color-whatsapp-1); font-weight: 600;"></p>
             </div>
           </form>
         </div>
       </div>
     </section>
 
-    <!-- ============ WhatsApp Groups Section ============ -->
-    <section id="whatsapp-groups" class="section" aria-labelledby="groupsTitle">
+    <!-- ============ WhatsApp Groups Section (hidden on load; revealed after successful registration) ============ -->
+    <section id="whatsapp-groups" class="section" aria-labelledby="groupsTitle" hidden style="display:none;">
       <div class="container">
         <div class="section-head reveal">
           <h2 class="section-title" id="groupsTitle">انضم إلى <span class="gradient-text">جروبات الواتساب</span></h2>
@@ -243,23 +253,25 @@
         </div>
 
         <div class="groups-grid">
-          <article class="group-card glass-card reveal">
+          <article class="group-card glass-card reveal" data-grade="الصف الأول الثانوي">
             <div class="group-icon"><img src="assets/icons/whatsapp.svg" alt="" width="32" height="32" loading="lazy"></div>
+            <span class="hero-badge" style="margin-bottom: 10px;"><span class="dot"></span> ✅ الجروب الخاص بك</span>
             <h3>🟢 جروب الصف الأول الثانوي</h3>
             <p>للتواصل، مواعيد الحصص، الواجبات، والإعلانات الخاصة بالصف الأول الثانوي.</p>
             <a href="https://chat.whatsapp.com/J5g2m1zWvvrAAZLVmbSeU4?s=cl&amp;p=a&amp;mlu=0" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-glow">
               <img src="assets/icons/whatsapp.svg" alt="" width="20" height="20">
-              انضم الآن
+              💬 فتح الجروب مرة أخرى
             </a>
           </article>
 
-          <article class="group-card glass-card reveal">
+          <article class="group-card glass-card reveal" data-grade="الصف الثاني الثانوي">
             <div class="group-icon"><img src="assets/icons/whatsapp.svg" alt="" width="32" height="32" loading="lazy"></div>
+            <span class="hero-badge" style="margin-bottom: 10px;"><span class="dot"></span> ✅ الجروب الخاص بك</span>
             <h3>🟢 جروب الصف الثاني الثانوي</h3>
             <p>للتواصل، مواعيد الحصص، الواجبات، والإعلانات الخاصة بالصف الثاني الثانوي.</p>
             <a href="https://chat.whatsapp.com/BGL3PanNGsbKVMV8FS7BRR?s=cl&amp;p=a&amp;mlu=0" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp btn-glow">
               <img src="assets/icons/whatsapp.svg" alt="" width="20" height="20">
-              انضم الآن
+              💬 فتح الجروب مرة أخرى
             </a>
           </article>
         </div>
@@ -273,6 +285,14 @@
       <div class="footer-brand">
         <img src="assets/logo.svg" alt="MH AI Academy" width="180" height="44" loading="lazy">
         <p>منصة تعليمية متخصصة في البرمجة والذكاء الاصطناعي لطلاب الثانوية العامة — نظام البكالوريا.</p>
+      </div>
+      <div class="footer-links" aria-labelledby="footerQuickLinksTitle">
+        <h4 id="footerQuickLinksTitle" style="color: var(--text-primary); margin-bottom: 12px; font-weight: 700;">روابط سريعة</h4>
+        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+          <li><a href="#home" class="footer-link" style="justify-content: flex-start;">الرئيسية</a></li>
+          <li><a href="#features" class="footer-link" style="justify-content: flex-start;">المميزات</a></li>
+          <li><a href="#register" class="footer-link" style="justify-content: flex-start;">التسجيل</a></li>
+        </ul>
       </div>
       <div class="footer-contact">
         <a href="tel:+201559160083" class="footer-link">
@@ -302,7 +322,7 @@
   </button>
 
   <!-- ============ Success Modal ============ -->
-  <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successTitle" aria-hidden="true">
+  <div class="modal-overlay" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successTitle" aria-describedby="successDescription" aria-hidden="true">
     <div class="modal">
       <div class="modal-icon success-icon" aria-hidden="true">
         <svg class="check-svg" viewBox="0 0 52 52" fill="none">
@@ -310,9 +330,15 @@
           <path class="check-mark" d="M15 27l7 7 15-16" stroke="#00C2FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <h3 id="successTitle">تم التسجيل بنجاح!</h3>
-      <p>شكرًا لتسجيلك في <strong>MH AI Academy</strong>. تم استلام بياناتك وسنتواصل معك قريبًا عبر واتساب.</p>
-      <button type="button" class="btn btn-primary btn-glow" data-close-modal>حسنًا</button>
+      <h3 id="successTitle">تم تسجيل بياناتك بنجاح</h3>
+      <p id="successSubtitle" style="color: var(--text-primary); font-weight: 700; margin-top: 4px;">شكراً لتسجيلك في <strong>MH AI Academy</strong></p>
+      <p id="successDescription">يمكنك الآن الانضمام إلى جروب الواتساب الخاص بصفك.</p>
+      <div class="modal-actions">
+        <a id="successJoinBtn" class="btn btn-whatsapp btn-glow btn-block" href="#" target="_blank" rel="noopener noreferrer">
+          <img src="assets/icons/whatsapp.svg" alt="" width="20" height="20">
+          <span class="btn-label">🚀 الانضمام إلى جروب الواتساب</span>
+        </a>
+      </div>
     </div>
   </div>
 
