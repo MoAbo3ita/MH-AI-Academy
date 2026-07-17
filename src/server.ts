@@ -2,10 +2,14 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import siteHtml from "../public/site.html?raw";
+import siteHtml from "../public/index.html?raw";
 
 type ServerEntry = {
-  fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
+  fetch: (
+    request: Request,
+    env: unknown,
+    ctx: unknown,
+  ) => Promise<Response> | Response;
 };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
@@ -21,7 +25,9 @@ async function getServerEntry(): Promise<ServerEntry> {
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
-async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
+async function normalizeCatastrophicSsrResponse(
+  response: Response,
+): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return response;
@@ -29,7 +35,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   const body = await response.clone().text();
   if (!isH3SwallowedErrorBody(body)) return response;
 
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  console.error(
+    consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`),
+  );
   return new Response(renderErrorPage(), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
@@ -38,7 +46,10 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 function isH3SwallowedErrorBody(body: string): boolean {
   try {
-    const payload = JSON.parse(body) as { unhandled?: unknown; message?: unknown };
+    const payload = JSON.parse(body) as {
+      unhandled?: unknown;
+      message?: unknown;
+    };
     return payload.unhandled === true && payload.message === "HTTPError";
   } catch {
     return false;
@@ -50,7 +61,10 @@ export default {
     try {
       const url = new URL(request.url);
       // Serve the MH AI Academy static site at the root path.
-      if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
+      if (
+        request.method === "GET" &&
+        (url.pathname === "/" || url.pathname === "/index.html")
+      ) {
         return new Response(siteHtml, {
           status: 200,
           headers: {
