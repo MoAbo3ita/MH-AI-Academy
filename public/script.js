@@ -27,7 +27,7 @@ const MHAcademy = (() => {
   const GRADE_GROUPS = {
     'الصف الأول الثانوي': {
       joinText: '🚀 الانضمام إلى جروب الصف الأول الثانوي',
-      url: 'https://chat.whatsapp.com/J5g2m1zWvvrAAZLVmbSeU4?s=cl&p=a&mlu=0'
+      url: 'https://chat.whatsapp.com/C5kl92G677i5lQENQvPwog?s=cl&p=a&mlu=0'
     },
     'الصف الثاني الثانوي': {
       joinText: '🚀 الانضمام إلى جروب الصف الثاني الثانوي',
