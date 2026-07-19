@@ -31,7 +31,7 @@ const MHAcademy = (() => {
     },
     'الصف الثاني الثانوي': {
       joinText: '🚀 الانضمام إلى جروب الصف الثاني الثانوي',
-      url: 'https://chat.whatsapp.com/BGL3PanNGsbKVMV8FS7BRR?s=cl&p=a&mlu=0'
+      url: 'https://chat.whatsapp.com/KJQ2icjzhzjIJrqAW7MBNj?s=cl&p=a&mlu=0'
     }
   };
 
