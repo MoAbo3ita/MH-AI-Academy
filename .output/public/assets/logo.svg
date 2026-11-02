@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 72" role="img" aria-label="MH AI Academy">
+  <defs>
+    <linearGradient id="mhGradient" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00C2FF"/>
+      <stop offset="1" stop-color="#6D5DF6"/>
+    </linearGradient>
+    <linearGradient id="mhTextGradient" x1="76" y1="0" x2="300" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00C2FF"/>
+      <stop offset="1" stop-color="#6D5DF6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Monogram mark -->
+  <rect x="4" y="8" width="56" height="56" rx="16" fill="url(#mhGradient)" opacity="0.12"/>
+  <rect x="4" y="8" width="56" height="56" rx="16" fill="none" stroke="url(#mhGradient)" stroke-width="2.2"/>
+  <path d="M15 46V26l8.5 10.5L32 26v20" fill="none" stroke="url(#mhGradient)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M39 26v20M52 26v20M39 36h13" fill="none" stroke="url(#mhGradient)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- AI circuit node -->
+  <path d="M44 15h6" stroke="url(#mhGradient)" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="52.5" cy="15" r="2.6" fill="#00C2FF"/>
+  <circle cx="52.5" cy="15" r="4.6" fill="none" stroke="#00C2FF" stroke-width="1" opacity="0.45"/>
+
+  <!-- Wordmark -->
+  <text x="76" y="35" font-family="Cairo, 'Segoe UI', Arial, sans-serif" font-size="24" font-weight="800" fill="#FFFFFF" letter-spacing="0.3">MH AI</text>
+  <text x="76" y="57" font-family="Cairo, 'Segoe UI', Arial, sans-serif" font-size="16.5" font-weight="700" fill="url(#mhTextGradient)" letter-spacing="1.2">ACADEMY</text>
+</svg>

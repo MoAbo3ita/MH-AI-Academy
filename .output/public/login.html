@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>تسجيل الدخول | MH AI Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="platform.css">
+</head>
+<body class="pf-body">
+  <main class="pf-auth">
+    <a class="pf-brand" href="index.html" aria-label="MH AI Academy"><img src="assets/logo.svg" alt="MH AI Academy" width="190" height="48" style="height:48px"></a>
+
+    <div class="pf-auth-card glass-card">
+      <div class="pf-tabs" role="tablist" id="authTabs">
+        <button class="pf-tab active" type="button" role="tab" data-tab="login">تسجيل الدخول</button>
+        <button class="pf-tab" type="button" role="tab" data-tab="signup">حساب جديد</button>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="pf-field"><label for="loginEmail">الإيميل</label><input class="form-input" id="loginEmail" type="email" autocomplete="email" dir="ltr" required></div>
+        <div class="pf-field"><label for="loginPass">كلمة المرور</label><input class="form-input" id="loginPass" type="password" autocomplete="current-password" required></div>
+        <button class="pf-btn" type="submit" style="width:100%">دخول</button>
+        <p style="text-align:center;margin-top:1rem"><button class="pf-link" type="button" id="toForgot">نسيت كلمة المرور؟</button></p>
+      </form>
+
+      <form id="signupForm" novalidate hidden>
+        <div class="pf-field"><label for="suName">الاسم بالكامل</label><input class="form-input" id="suName" type="text" autocomplete="name" required></div>
+        <div class="pf-row">
+          <div class="pf-field"><label for="suPhone">رقم الموبايل</label><input class="form-input" id="suPhone" type="tel" inputmode="numeric" maxlength="11" dir="ltr" placeholder="01xxxxxxxxx" required></div>
+          <div class="pf-field"><label for="suGrade">الصف</label>
+            <select class="form-input" id="suGrade" required><option value="">اختر الصف</option><option>الصف الأول الثانوي</option><option>الصف الثاني الثانوي</option></select></div>
+        </div>
+        <div class="pf-field"><label for="suParent">رقم ولي الأمر (إجباري)</label><input class="form-input" id="suParent" type="tel" inputmode="numeric" maxlength="11" dir="ltr" placeholder="01xxxxxxxxx" required></div>
+        <div class="pf-field"><label for="suEmail">الإيميل</label><input class="form-input" id="suEmail" type="email" autocomplete="email" dir="ltr" required></div>
+        <div class="pf-field"><label for="suPass">كلمة المرور</label><input class="form-input" id="suPass" type="password" autocomplete="new-password" minlength="8" placeholder="8 أحرف على الأقل" required></div>
+        <button class="pf-btn" type="submit" style="width:100%">إنشاء الحساب</button>
+        <p class="pf-sub" style="margin:.9rem 0 0;text-align:center;font-size:.85rem">نستخدم بياناتك فقط للتواصل معك بخصوص الاشتراك.</p>
+      </form>
+
+      <form id="forgotForm" novalidate hidden>
+        <p class="pf-note">اكتب إيميلك وهنبعتلك رابط لإعادة تعيين كلمة المرور.</p>
+        <div class="pf-field"><label for="fgEmail">الإيميل</label><input class="form-input" id="fgEmail" type="email" autocomplete="email" dir="ltr" required></div>
+        <button class="pf-btn" type="submit" style="width:100%">إرسال الرابط</button>
+        <p style="text-align:center;margin-top:1rem"><button class="pf-link" type="button" id="backLogin">رجوع لتسجيل الدخول</button></p>
+      </form>
+
+      <form id="recoveryForm" novalidate hidden>
+        <p class="pf-note">اختر كلمة مرور جديدة لحسابك.</p>
+        <div class="pf-field"><label for="rcPass">كلمة المرور الجديدة</label><input class="form-input" id="rcPass" type="password" autocomplete="new-password" minlength="8" required></div>
+        <button class="pf-btn" type="submit" style="width:100%">حفظ ودخول</button>
+      </form>
+
+      <p class="pf-msg" id="msg" role="alert" aria-live="polite"></p>
+    </div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script src="config.js"></script>
+  <script src="platform.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

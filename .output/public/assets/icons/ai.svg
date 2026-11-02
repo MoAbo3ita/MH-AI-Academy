@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Artificial Intelligence">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00C2FF"/>
+      <stop offset="1" stop-color="#6D5DF6"/>
+    </linearGradient>
+  </defs>
+  <rect x="6.5" y="6.5" width="11" height="11" rx="2.5" stroke="url(#g)"/>
+  <path d="M9.5 6.5V3.5M14.5 6.5V3.5M9.5 20.5v-3M14.5 20.5v-3M6.5 9.5h-3M6.5 14.5h-3M20.5 9.5h-3M20.5 14.5h-3" stroke="url(#g)"/>
+  <text x="12" y="14.6" text-anchor="middle" font-family="Arial, sans-serif" font-size="6.4" font-weight="800" fill="url(#g)" stroke="none">AI</text>
+</svg>

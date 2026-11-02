@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>الحصص والملفات | MH AI Academy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="platform.css">
+</head>
+<body class="pf-body">
+  <div id="platformHeader"></div>
+  <main class="pf-main"><div class="pf-wrap">
+    <h1 class="pf-title">الحصص <span class="gradient-text">والملفات</span></h1>
+    <p class="pf-sub" id="subtitle">جارٍ التحميل…</p>
+    <div id="subBanner"></div>
+    <div class="pf-tabs" id="tabs" role="tablist">
+      <button class="pf-tab active" type="button" role="tab" data-tab="lessons">🎬 الحصص</button>
+      <button class="pf-tab" type="button" role="tab" data-tab="pdfs">📄 الملفات</button>
+      <button class="pf-tab" type="button" role="tab" data-tab="orders">🧾 طلباتي</button>
+    </div>
+    <div class="pf-toolbar" id="toolbar"></div>
+    <div id="content"><p class="pf-loading">جارٍ التحميل…</p></div>
+  </div></main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" crossorigin="anonymous"></script>
+  <script src="config.js"></script>
+  <script src="platform.js"></script>
+  <script src="lessons.js"></script>
+</body>
+</html>
