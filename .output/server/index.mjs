@@ -15,6 +15,13 @@ var services = { ["ssr"]: lazyService(() => import("./_ssr/ssr.mjs")) };
 globalThis.__nitro_vite_envs__ = services;
 // #nitro/virtual/public-assets-data
 var public_assets_data_default = {
+	"/curriculum.html": {
+		"type": "text/html; charset=utf-8",
+		"etag": "\"288f-0ts76ipHofEVnXpC4nKgzD5Dm/M\"",
+		"mtime": "2026-11-01T13:20:25.000Z",
+		"size": 10383,
+		"path": "../public/curriculum.html"
+	},
 	"/admin.html": {
 		"type": "text/html; charset=utf-8",
 		"etag": "\"8fc-nNY9Mk3E95ku8l/bcBFNHSwUlnE\"",
@@ -22,19 +29,12 @@ var public_assets_data_default = {
 		"size": 2300,
 		"path": "../public/admin.html"
 	},
-	"/favicon.ico": {
-		"type": "image/vnd.microsoft.icon",
-		"etag": "\"4f95-3RXc3p2mhEAs1WBwaIvE0Y0uu0Y\"",
-		"mtime": "2026-07-17T09:31:53.000Z",
-		"size": 20373,
-		"path": "../public/favicon.ico"
-	},
-	"/curriculum.html": {
-		"type": "text/html; charset=utf-8",
-		"etag": "\"288f-0ts76ipHofEVnXpC4nKgzD5Dm/M\"",
-		"mtime": "2026-11-01T13:20:25.000Z",
-		"size": 10383,
-		"path": "../public/curriculum.html"
+	"/admin.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"7d0a-1+n9b9vMiUvHKuVtamUkFoX69Ro\"",
+		"mtime": "2026-11-01T13:22:56.000Z",
+		"size": 32010,
+		"path": "../public/admin.js"
 	},
 	"/faq.html": {
 		"type": "text/html; charset=utf-8",
@@ -50,6 +50,20 @@ var public_assets_data_default = {
 		"size": 824,
 		"path": "../public/config.js"
 	},
+	"/favicon.ico": {
+		"type": "image/vnd.microsoft.icon",
+		"etag": "\"4f95-3RXc3p2mhEAs1WBwaIvE0Y0uu0Y\"",
+		"mtime": "2026-07-17T09:31:53.000Z",
+		"size": 20373,
+		"path": "../public/favicon.ico"
+	},
+	"/lessons.html": {
+		"type": "text/html; charset=utf-8",
+		"etag": "\"6e6-giiJKcUYYYttIGGcH239yLuSIfk\"",
+		"mtime": "2026-11-01T13:21:37.000Z",
+		"size": 1766,
+		"path": "../public/lessons.html"
+	},
 	"/features.html": {
 		"type": "text/html; charset=utf-8",
 		"etag": "\"2831-Hx7XY0q0wTZNKGue3hAc0nQUhHc\"",
@@ -57,12 +71,26 @@ var public_assets_data_default = {
 		"size": 10289,
 		"path": "../public/features.html"
 	},
-	"/admin.js": {
+	"/index.html": {
+		"type": "text/html; charset=utf-8",
+		"etag": "\"2f98-+32EFg0e2Sp/CcNLU/nyzvtsHNM\"",
+		"mtime": "2026-11-01T13:20:25.000Z",
+		"size": 12184,
+		"path": "../public/index.html"
+	},
+	"/login.js": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"7d0a-1+n9b9vMiUvHKuVtamUkFoX69Ro\"",
-		"mtime": "2026-11-01T13:22:56.000Z",
-		"size": 32010,
-		"path": "../public/admin.js"
+		"etag": "\"13ee-y/Qr0u8b8NYjC/vhpiA3EIkIMF0\"",
+		"mtime": "2026-11-01T13:21:37.000Z",
+		"size": 5102,
+		"path": "../public/login.js"
+	},
+	"/platform.css": {
+		"type": "text/css; charset=utf-8",
+		"etag": "\"33cb-ab8qy5z57aLuQfXsGskQ9pyCqxY\"",
+		"mtime": "2026-11-01T19:17:35.000Z",
+		"size": 13259,
+		"path": "../public/platform.css"
 	},
 	"/lessons.js": {
 		"type": "text/javascript; charset=utf-8",
@@ -78,26 +106,19 @@ var public_assets_data_default = {
 		"size": 5001,
 		"path": "../public/login.html"
 	},
-	"/lessons.html": {
+	"/notebooks.html": {
 		"type": "text/html; charset=utf-8",
-		"etag": "\"6e6-giiJKcUYYYttIGGcH239yLuSIfk\"",
-		"mtime": "2026-11-01T13:21:37.000Z",
-		"size": 1766,
-		"path": "../public/lessons.html"
-	},
-	"/platform.css": {
-		"type": "text/css; charset=utf-8",
-		"etag": "\"33cb-ab8qy5z57aLuQfXsGskQ9pyCqxY\"",
-		"mtime": "2026-11-01T19:17:35.000Z",
-		"size": 13259,
-		"path": "../public/platform.css"
-	},
-	"/index.html": {
-		"type": "text/html; charset=utf-8",
-		"etag": "\"2f98-+32EFg0e2Sp/CcNLU/nyzvtsHNM\"",
+		"etag": "\"26e5-ercdgel+k2EGHmydE9a7mnDG2Ig\"",
 		"mtime": "2026-11-01T13:20:25.000Z",
-		"size": 12184,
-		"path": "../public/index.html"
+		"size": 9957,
+		"path": "../public/notebooks.html"
+	},
+	"/pricing.html": {
+		"type": "text/html; charset=utf-8",
+		"etag": "\"29e5-pmpODQPO08qke+M8Lhn2IFOjotc\"",
+		"mtime": "2026-11-01T13:20:25.000Z",
+		"size": 10725,
+		"path": "../public/pricing.html"
 	},
 	"/platform.js": {
 		"type": "text/javascript; charset=utf-8",
@@ -113,27 +134,6 @@ var public_assets_data_default = {
 		"size": 7519,
 		"path": "../public/register.html"
 	},
-	"/notebooks.html": {
-		"type": "text/html; charset=utf-8",
-		"etag": "\"26e5-ercdgel+k2EGHmydE9a7mnDG2Ig\"",
-		"mtime": "2026-11-01T13:20:25.000Z",
-		"size": 9957,
-		"path": "../public/notebooks.html"
-	},
-	"/site.js": {
-		"type": "text/javascript; charset=utf-8",
-		"etag": "\"a46-BzB7u3N/0CqFkNbr2wGeboocSQw\"",
-		"mtime": "2026-11-01T13:20:21.000Z",
-		"size": 2630,
-		"path": "../public/site.js"
-	},
-	"/pricing.html": {
-		"type": "text/html; charset=utf-8",
-		"etag": "\"29e5-pmpODQPO08qke+M8Lhn2IFOjotc\"",
-		"mtime": "2026-11-01T13:20:25.000Z",
-		"size": 10725,
-		"path": "../public/pricing.html"
-	},
 	"/style.css": {
 		"type": "text/css; charset=utf-8",
 		"etag": "\"8319-lGKmE6mtEoguDA3yuvG6LVW5CMA\"",
@@ -144,16 +144,9 @@ var public_assets_data_default = {
 	"/assets/index-XMjrTol0.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"5a5a1-73nIBMKNpSphe95YxoeW5275WA8\"",
-		"mtime": "2026-11-02T01:27:46.975Z",
+		"mtime": "2026-11-02T02:27:20.757Z",
 		"size": 370081,
 		"path": "../public/assets/index-XMjrTol0.js"
-	},
-	"/assets/logo.svg": {
-		"type": "image/svg+xml",
-		"etag": "\"693-Obq7VQKRLUqLtIWfZr7S7gbI1tY\"",
-		"mtime": "2026-07-17T09:31:11.000Z",
-		"size": 1683,
-		"path": "../public/assets/logo.svg"
 	},
 	"/script.js": {
 		"type": "text/javascript; charset=utf-8",
@@ -162,12 +155,12 @@ var public_assets_data_default = {
 		"size": 17980,
 		"path": "../public/script.js"
 	},
-	"/assets/mascot.webp": {
-		"type": "image/webp",
-		"etag": "\"23bb2-oOHWo4tbm+XpbCAznFeX1L+/LqQ\"",
-		"mtime": "2026-11-01T13:19:10.000Z",
-		"size": 146354,
-		"path": "../public/assets/mascot.webp"
+	"/register.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"3ecf-+bRU4yBbVgZ4GOqlK5W8lqrzcz4\"",
+		"mtime": "2026-11-01T13:21:19.000Z",
+		"size": 16079,
+		"path": "../public/register.js"
 	},
 	"/assets/mascot.png": {
 		"type": "image/png",
@@ -176,12 +169,47 @@ var public_assets_data_default = {
 		"size": 595716,
 		"path": "../public/assets/mascot.png"
 	},
+	"/site.js": {
+		"type": "text/javascript; charset=utf-8",
+		"etag": "\"a46-BzB7u3N/0CqFkNbr2wGeboocSQw\"",
+		"mtime": "2026-11-01T13:20:21.000Z",
+		"size": 2630,
+		"path": "../public/site.js"
+	},
+	"/assets/logo.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"693-Obq7VQKRLUqLtIWfZr7S7gbI1tY\"",
+		"mtime": "2026-07-17T09:31:11.000Z",
+		"size": 1683,
+		"path": "../public/assets/logo.svg"
+	},
 	"/assets/routes-R8V8g0LZ.js": {
 		"type": "text/javascript; charset=utf-8",
 		"etag": "\"167-2SoMFHIct6YxUj2xJxr5GJbjNIA\"",
-		"mtime": "2026-11-02T01:27:46.976Z",
+		"mtime": "2026-11-02T02:27:20.758Z",
 		"size": 359,
 		"path": "../public/assets/routes-R8V8g0LZ.js"
+	},
+	"/assets/styles-CQBEM3ma.css": {
+		"type": "text/css; charset=utf-8",
+		"etag": "\"11158-LXXSvStzCQqrfOQ8x4oLFYwbEpI\"",
+		"mtime": "2026-11-02T02:27:20.758Z",
+		"size": 69976,
+		"path": "../public/assets/styles-CQBEM3ma.css"
+	},
+	"/assets/mascot.webp": {
+		"type": "image/webp",
+		"etag": "\"23bb2-oOHWo4tbm+XpbCAznFeX1L+/LqQ\"",
+		"mtime": "2026-11-01T13:19:10.000Z",
+		"size": 146354,
+		"path": "../public/assets/mascot.webp"
+	},
+	"/assets/icons/check.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"1ef-4SLwyMBBdkjGp6W0Z7ptNdvvDFg\"",
+		"mtime": "2026-07-17T09:30:03.000Z",
+		"size": 495,
+		"path": "../public/assets/icons/check.svg"
 	},
 	"/assets/icons/ai.svg": {
 		"type": "image/svg+xml",
@@ -190,40 +218,12 @@ var public_assets_data_default = {
 		"size": 760,
 		"path": "../public/assets/icons/ai.svg"
 	},
-	"/assets/styles-CQBEM3ma.css": {
-		"type": "text/css; charset=utf-8",
-		"etag": "\"11158-LXXSvStzCQqrfOQ8x4oLFYwbEpI\"",
-		"mtime": "2026-11-02T01:27:46.976Z",
-		"size": 69976,
-		"path": "../public/assets/styles-CQBEM3ma.css"
-	},
 	"/assets/og-image.jpg": {
 		"type": "image/jpeg",
 		"etag": "\"1e26d-Q6LSQquniBvvm5owFDby6BGVDsY\"",
 		"mtime": "2026-10-19T12:07:20.000Z",
 		"size": 123501,
 		"path": "../public/assets/og-image.jpg"
-	},
-	"/login.js": {
-		"type": "text/javascript; charset=utf-8",
-		"etag": "\"13ee-y/Qr0u8b8NYjC/vhpiA3EIkIMF0\"",
-		"mtime": "2026-11-01T13:21:37.000Z",
-		"size": 5102,
-		"path": "../public/login.js"
-	},
-	"/assets/icons/phone.svg": {
-		"type": "image/svg+xml",
-		"etag": "\"1e5-wvzy4c6ug+Qa3Hi2WUxVgZ2TMKY\"",
-		"mtime": "2026-07-17T09:30:14.000Z",
-		"size": 485,
-		"path": "../public/assets/icons/phone.svg"
-	},
-	"/assets/icons/check.svg": {
-		"type": "image/svg+xml",
-		"etag": "\"1ef-4SLwyMBBdkjGp6W0Z7ptNdvvDFg\"",
-		"mtime": "2026-07-17T09:30:03.000Z",
-		"size": 495,
-		"path": "../public/assets/icons/check.svg"
 	},
 	"/assets/icons/robot.svg": {
 		"type": "image/svg+xml",
@@ -239,26 +239,12 @@ var public_assets_data_default = {
 		"size": 737,
 		"path": "../public/assets/icons/python.svg"
 	},
-	"/register.js": {
-		"type": "text/javascript; charset=utf-8",
-		"etag": "\"3ecf-+bRU4yBbVgZ4GOqlK5W8lqrzcz4\"",
-		"mtime": "2026-11-01T13:21:19.000Z",
-		"size": 16079,
-		"path": "../public/register.js"
-	},
-	"/assets/icons/whatsapp.svg": {
+	"/assets/icons/phone.svg": {
 		"type": "image/svg+xml",
-		"etag": "\"211-lr2eYnpo8jkYsTIZP5RsO2GxnjA\"",
-		"mtime": "2026-07-17T09:30:35.000Z",
-		"size": 529,
-		"path": "../public/assets/icons/whatsapp.svg"
-	},
-	"/assets/notebooks/explain-cover.webp": {
-		"type": "image/webp",
-		"etag": "\"114f2-0KDPo/WPjI3JD0zVT0Wxdt2kIaU\"",
-		"mtime": "2026-10-18T19:25:38.000Z",
-		"size": 70898,
-		"path": "../public/assets/notebooks/explain-cover.webp"
+		"etag": "\"1e5-wvzy4c6ug+Qa3Hi2WUxVgZ2TMKY\"",
+		"mtime": "2026-07-17T09:30:14.000Z",
+		"size": 485,
+		"path": "../public/assets/icons/phone.svg"
 	},
 	"/assets/icons/student.svg": {
 		"type": "image/svg+xml",
@@ -273,6 +259,20 @@ var public_assets_data_default = {
 		"mtime": "2026-07-17T09:30:08.000Z",
 		"size": 660,
 		"path": "../public/assets/icons/graduation.svg"
+	},
+	"/assets/notebooks/explain-cover.webp": {
+		"type": "image/webp",
+		"etag": "\"114f2-0KDPo/WPjI3JD0zVT0Wxdt2kIaU\"",
+		"mtime": "2026-10-18T19:25:38.000Z",
+		"size": 70898,
+		"path": "../public/assets/notebooks/explain-cover.webp"
+	},
+	"/assets/icons/whatsapp.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"211-lr2eYnpo8jkYsTIZP5RsO2GxnjA\"",
+		"mtime": "2026-07-17T09:30:35.000Z",
+		"size": 529,
+		"path": "../public/assets/icons/whatsapp.svg"
 	},
 	"/assets/notebooks/practice-cover.webp": {
 		"type": "image/webp",
