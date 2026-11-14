@@ -159,11 +159,24 @@
     } catch (e) { /* not a URL */ }
     return null;
   }
+  // Google Drive: الملف لازم يكون متاح لأي حد معاه الرابط. نقبل رابط الملف أو الـ ID فقط.
+  function driveId(input) {
+    input = String(input || '').trim();
+    if (/^[\w-]{20,}$/.test(input)) return input;
+    try {
+      const u = new URL(input);
+      if (u.hostname !== 'drive.google.com' && u.hostname !== 'docs.google.com') return null;
+      const m = u.pathname.match(/\/file\/d\/([\w-]{20,})/); if (m) return m[1];
+      const id = u.searchParams.get('id'); if (id && /^[\w-]{20,}$/.test(id)) return id;
+    } catch (e) { /* not a URL */ }
+    return null;
+  }
   function vimeoId(input) { const m = String(input || '').trim().match(/^(\d{6,12})$|vimeo\.com\/(?:video\/)?(\d{6,12})/); return m ? (m[1] || m[2]) : null; }
   function normalizeVideo(provider, input) {
     input = String(input || '').trim();
     if (provider === 'youtube') return youtubeId(input);
     if (provider === 'vimeo') return vimeoId(input);
+    if (provider === 'drive') return driveId(input);
     if (provider === 'bunny') return /^https:\/\/iframe\.mediadelivery\.net\/embed\/[\w\-\/]+(\?[^\s]*)?$/.test(input) ? input : null;
     if (provider === 'url') return /^https:\/\/[^\s]+\.(mp4|webm|m3u8)(\?[^\s]*)?$/i.test(input) ? input : null;
     return null;
@@ -172,6 +185,7 @@
     input = String(input || '');
     if (/youtu\.?be/.test(input)) return 'youtube';
     if (/vimeo\.com/.test(input)) return 'vimeo';
+    if (/drive\.google\.com|docs\.google\.com/.test(input)) return 'drive';
     if (/mediadelivery\.net/.test(input)) return 'bunny';
     if (/\.(mp4|webm|m3u8)(\?|$)/i.test(input)) return 'url';
     return null;
@@ -179,6 +193,7 @@
   function embedUrl(provider, ref) {
     if (provider === 'youtube') { const id = youtubeId(ref); return id ? `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1&fs=0` : null; }
     if (provider === 'vimeo') { const id = vimeoId(ref); return id ? `https://player.vimeo.com/video/${id}?dnt=1` : null; }
+    if (provider === 'drive') { const id = driveId(ref); return id ? `https://drive.google.com/file/d/${id}/preview` : null; }
     if (provider === 'bunny') return normalizeVideo('bunny', ref);
     return null;
   }
@@ -193,7 +208,7 @@
     } else {
       const src = embedUrl(media.provider, media.video_ref);
       if (!src) return h('p', { class: 'pf-empty', text: 'رابط الفيديو غير صالح. بلّغ الأدمن.' });
-      inner = h('iframe', { src, title: 'الحصة', allow: 'accelerometer; encrypted-media; gyroscope; picture-in-picture', referrerpolicy: 'strict-origin-when-cross-origin', sandbox: 'allow-scripts allow-same-origin allow-presentation' });
+      inner = h('iframe', { src, title: 'الحصة', allow: 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture', referrerpolicy: 'strict-origin-when-cross-origin', sandbox: 'allow-scripts allow-same-origin allow-presentation' });
     }
     const wm = h('div', { class: 'pf-wm', 'aria-hidden': 'true', text: `${(profile && profile.full_name) || ''} • ${(profile && profile.phone) || ''}` });
     const fs = h('button', { class: 'pf-fs', type: 'button', onclick: () => { if (document.fullscreenElement) document.exitFullscreen(); else if (wrap.requestFullscreen) wrap.requestFullscreen(); } }, '⛶ ملء الشاشة');

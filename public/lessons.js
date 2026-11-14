@@ -35,26 +35,30 @@
   const gradeOk = (it) => !gradeFilter || it.grade === 'all' || it.grade === gradeFilter;
 
   /* ---------- البطاقات ---------- */
+  const canBuy = (item) => item.allow_purchase !== false;   // الشراء الفردي مسموح (الافتراضي)
   function badge(type, item) {
     if (item.is_free) return h('span', { class: 'pf-badge free' }, 'مجاني');
     if (hasAccess(type, item)) return h('span', { class: 'pf-badge ok' }, 'مفعّل ✓');
-    if (item.for_subscribers) return h('span', { class: 'pf-badge lock' }, '⭐ للمشتركين');
-    return h('span', { class: 'pf-badge lock' }, `🔒 ${item.price_egp} ج`);
+    return [item.for_subscribers ? h('span', { class: 'pf-badge lock' }, '⭐ للمشتركين') : null, canBuy(item) ? h('span', { class: 'pf-badge lock' }, `🔒 ${item.price_egp} ج`) : null];
   }
   function actions(type, item) {
     const open = type === 'lesson' ? () => openLesson(item) : () => openPdf(item);
     const openLabel = type === 'lesson' ? '▶ شاهد الحصة' : '⬇ فتح الملف';
     if (hasAccess(type, item)) return h('button', { class: 'pf-btn', type: 'button', onclick: open }, openLabel);
-    if (item.for_subscribers) {
-      return settings.registration_mode === 'subscription'
-        ? h('a', { class: 'pf-btn', href: 'register.html' }, '⭐ اشترك للمشاهدة')
-        : h('button', { class: 'pf-btn ghost', type: 'button', disabled: true }, 'متاح للمشتركين فقط');
+    const out = [];
+    if (canBuy(item)) {                                   // شراء فردي
+      const last = latestOrder(type, item.id);
+      if (last && last.status === 'pending') out.push(h('button', { class: 'pf-btn ghost', type: 'button', disabled: true }, '⏳ طلبك قيد المراجعة'));
+      else {
+        if (last && last.status === 'rejected') out.push(h('p', { class: 'pf-badge rejected', style: 'width:100%' }, 'تم رفض طلبك السابق' + (last.admin_note ? ': ' + last.admin_note : '')));
+        out.push(h('button', { class: 'pf-btn', type: 'button', onclick: () => openPurchase(type, item) }, last && last.status === 'rejected' ? 'أعد المحاولة' : `اشترِ بـ ${item.price_egp} ج`));
+      }
     }
-    const last = latestOrder(type, item.id);
-    if (last && last.status === 'pending') return h('button', { class: 'pf-btn ghost', type: 'button', disabled: true }, '⏳ طلبك قيد المراجعة');
-    const buy = h('button', { class: 'pf-btn', type: 'button', onclick: () => openPurchase(type, item) }, last && last.status === 'rejected' ? 'أعد المحاولة' : `اشترِ بـ ${item.price_egp} ج`);
-    if (last && last.status === 'rejected') return [h('p', { class: 'pf-badge rejected', style: 'width:100%' }, 'تم رفض طلبك السابق' + (last.admin_note ? ': ' + last.admin_note : '')), buy];
-    return buy;
+    if (item.for_subscribers) {                           // أو الاشتراك
+      if (settings.registration_mode === 'subscription') out.push(h('a', { class: canBuy(item) ? 'pf-btn ghost' : 'pf-btn', href: 'register.html' }, canBuy(item) ? 'أو اشترك وافتح كل المحتوى' : '⭐ اشترك للمشاهدة'));
+      else if (!canBuy(item)) out.push(h('button', { class: 'pf-btn ghost', type: 'button', disabled: true }, 'متاح للمشتركين فقط'));
+    }
+    return out;
   }
   function card(type, item) {
     return h('article', { class: 'pf-card glass-card' },

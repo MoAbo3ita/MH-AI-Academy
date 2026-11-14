@@ -8,7 +8,7 @@
 
   const content = $('#content'), toolbar = $('#toolbar');
   let tab = 'orders', orderFilter = 'pending', subFilter = 'pending';
-  let settings = {}, lessons = [], pdfs = [];
+  let settings = {}, lessons = [], pdfs = [], plans = [];
 
   const numberOr = (v, d) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : d; };
   const loading = () => content.replaceChildren(h('p', { class: 'pf-loading', text: 'جارٍ التحميل…' }));
@@ -20,13 +20,14 @@
   const chips = (list, current, set) => list.map(([k, label]) => h('button', { class: 'pf-btn sm ' + (current === k ? '' : 'ghost'), type: 'button', onclick: () => set(k) }, label));
 
   async function loadCatalog() {
-    const [l, p, s] = await Promise.all([
+    const [l, p, s, pl] = await Promise.all([
       sb.from('lessons').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false }),
       sb.from('pdf_files').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false }),
-      loadSettings()
+      loadSettings(),
+      sb.from('plans').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
     ]);
     if (l.error || p.error) fail(l.error || p.error);
-    lessons = l.data || []; pdfs = p.data || []; settings = s || {};
+    lessons = l.data || []; pdfs = p.data || []; settings = s || {}; plans = (pl && pl.data) || [];
   }
   async function refreshCounts() {
     const [o, s] = await Promise.all([
@@ -96,7 +97,7 @@
       const p = P[s.user_id] || {};
       return h('article', { class: 'pf-card glass-card pf-order' },
         h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + s.status }, st[s.status]), h('span', { class: 'pf-badge off' }, s.method === 'instapay' ? 'إنستا باي' : 'WE Pay'), h('span', { class: 'pf-badge info' }, 'اشتراك')),
-        h('h3', { text: p.full_name || '—' }), kv('الصف', s.grade),
+        h('h3', { text: p.full_name || '—' }), kv('الخطة', (plans.find((x) => x.id === s.plan_id) || {}).name || '—'), kv('الصف', s.grade),
         h('div', { class: 'pf-kv' }, h('span', {}, 'تليفون الطالب'), waLink(p.phone)), h('div', { class: 'pf-kv' }, h('span', {}, 'ولي الأمر'), waLink(p.parent_phone)),
         kv('المبلغ', `${s.amount_egp} ج`), kv('الشهور', s.months), kv('حوّل من رقم', s.sender_phone), kv('رقم العملية', s.transaction_ref || '—'), kv('التاريخ', fmtDate(s.created_at)),
         p.subscribed_until ? kv('اشتراكه الحالي حتى', fmtDate(p.subscribed_until)) : null, s.admin_note ? kv('ملاحظة', s.admin_note) : null,
@@ -149,14 +150,14 @@
   }
 
   /* =============== الحصص والملفات =============== */
-  const accessOf = (it) => (it.is_free ? 'free' : it.for_subscribers ? 'subscribers' : 'paid');
+  const accessOf = (it) => (it.is_free ? 'free' : it.for_subscribers ? (it.allow_purchase === false ? 'subscribers' : 'both') : 'paid');
   function itemCard(type, it) {
     const table = type === 'lesson' ? 'lessons' : 'pdf_files';
     const patch = async (obj) => { const { error } = await sb.from(table).update(obj).eq('id', it.id); if (error) return fail(error); await loadCatalog(); render(); };
     const a = accessOf(it);
     return h('article', { class: 'pf-card glass-card' },
       h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + (it.is_published ? 'ok' : 'off') }, it.is_published ? 'منشور' : 'مخفي'),
-        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين' : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade))),
+        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين فقط' : a === 'both' ? `⭐ مشتركين + شراء ${it.price_egp} ج` : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade))),
       h('h3', { text: it.title }), it.description ? h('p', { text: it.description }) : null,
       h('div', { class: 'pf-actions' },
         h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => patch({ is_published: !it.is_published }) }, it.is_published ? 'إخفاء' : 'نشر'),
@@ -175,18 +176,18 @@
       title: h('input', { class: 'form-input', type: 'text', maxlength: '140', value: it ? it.title : '' }),
       desc: h('textarea', { class: 'form-input', maxlength: '600' }, it ? it.description : ''),
       grade: h('select', { class: 'form-input' }, h('option', { value: 'all' }, 'كل الصفوف'), ...GRADES.map((g) => h('option', { value: g }, g))),
-      access: h('select', { class: 'form-input' }, h('option', { value: 'paid' }, 'مدفوع (شراء فردي)'), h('option', { value: 'subscribers' }, '⭐ للمشتركين فقط'), h('option', { value: 'free' }, 'مجاني لكل الطلاب المسجّلين')),
+      access: h('select', { class: 'form-input' }, h('option', { value: 'paid' }, 'مدفوع (شراء فردي فقط)'), h('option', { value: 'both' }, '⭐ شراء فردي + مفتوح للمشتركين'), h('option', { value: 'subscribers' }, '⭐ للمشتركين فقط (بدون شراء فردي)'), h('option', { value: 'free' }, 'مجاني لكل الطلاب المسجّلين')),
       pub: h('input', { type: 'checkbox' }),
       price: h('input', { class: 'form-input', type: 'number', min: '0', step: '1', value: it ? it.price_egp : numberOr(settings.default_lesson_price, 85) }),
       sort: h('input', { class: 'form-input', type: 'number', step: '1', value: it ? it.sort_order : 0 })
     };
     f.grade.value = it ? it.grade : 'all'; f.access.value = it ? accessOf(it) : 'paid'; f.pub.checked = it ? it.is_published : true;
-    const sync = () => { f.price.disabled = f.access.value !== 'paid'; }; f.access.addEventListener('change', sync); sync();
+    const sync = () => { f.price.disabled = !['paid', 'both'].includes(f.access.value); }; f.access.addEventListener('change', sync); sync();
     return f;
   };
-  const rowFrom = (f, title) => ({ title, description: f.desc.value.trim(), grade: f.grade.value, is_free: f.access.value === 'free', for_subscribers: f.access.value === 'subscribers',
+  const rowFrom = (f, title) => ({ title, description: f.desc.value.trim(), grade: f.grade.value, is_free: f.access.value === 'free', for_subscribers: ['subscribers', 'both'].includes(f.access.value), allow_purchase: ['paid', 'both', 'free'].includes(f.access.value),
     price_egp: numberOr(f.price.value, 85), is_published: f.pub.checked, sort_order: numberOr(f.sort.value, 0) || 0 });
-  const accessHint = 'مدفوع: الطالب يشتري كل حصة بسعرها. للمشتركين: تفتح لأي طالب اشتراكه ساري. مجاني: تفتح لكل الطلاب المسجّلين.';
+  const accessHint = 'مدفوع: يشتريها الطالب بسعرها. شراء فردي + مشتركين: يقدر يشتريها أي طالب لوحدها، وتفتح تلقائيًا لأي مشترك اشتراكه ساري. للمشتركين فقط: ما تتباعش لوحدها. مجاني: تفتح لكل الطلاب المسجّلين.';
 
   function renderLessons() {
     toolbar.replaceChildren(h('button', { class: 'pf-btn', type: 'button', onclick: () => lessonForm() }, '＋ حصة جديدة'));
@@ -196,7 +197,7 @@
   function lessonForm(it) {
     const f = basicFields(it);
     f.dur = h('input', { class: 'form-input', type: 'number', min: '0', value: it && it.duration_minutes ? it.duration_minutes : '' });
-    f.prov = h('select', { class: 'form-input' }, ...[['youtube', 'يوتيوب (غير مدرج)'], ['vimeo', 'Vimeo'], ['bunny', 'Bunny Stream'], ['url', 'رابط ملف فيديو مباشر (mp4)']].map(([v, l]) => h('option', { value: v }, l)));
+    f.prov = h('select', { class: 'form-input' }, ...[['youtube', 'يوتيوب (غير مدرج)'], ['drive', 'Google Drive (لازم الملف يكون متاح لأي حد معاه الرابط)'], ['vimeo', 'Vimeo'], ['bunny', 'Bunny Stream'], ['url', 'رابط ملف فيديو مباشر (mp4)']].map(([v, l]) => h('option', { value: v }, l)));
     f.video = h('input', { class: 'form-input', type: 'text', dir: 'ltr', placeholder: 'الصق رابط الفيديو هنا' });
     f.video.addEventListener('input', () => { const d = detectProvider(f.video.value); if (d) f.prov.value = d; });
     const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'حفظ');
@@ -295,7 +296,8 @@
       h('input', { type: 'radio', name: 'mode', value: k, checked: k === mode, onchange: () => { mode = k; } }), h('span', {}, h('strong', { text: t }), h('br'), h('small', { style: 'color:var(--text-secondary);font-weight:600', text: d })))));
     const inp = (k, type = 'text', extra = {}) => h('input', { class: 'form-input', type, dir: type === 'text' && extra.ltr ? 'ltr' : null, value: settings[k] || '', ...extra });
     const closedMsg = h('textarea', { class: 'form-input', maxlength: '300' }, settings.registration_closed_message || '');
-    const p1 = inp('sub_price_g1', 'number', { min: '0' }), p2 = inp('sub_price_g2', 'number', { min: '0' });
+    const wa = h('input', { class: 'form-input', type: 'tel', dir: 'ltr', maxlength: '12', value: settings.contact_whatsapp ? String(settings.contact_whatsapp).replace(/^20/, '0') : '' });
+    const ph = inp('contact_phone', 'tel', { maxlength: '11', dir: 'ltr' });
     const g1 = inp('group_link_g1', 'text', { ltr: true, placeholder: 'https://chat.whatsapp.com/…' }), g2 = inp('group_link_g2', 'text', { ltr: true, placeholder: 'https://chat.whatsapp.com/…' });
     const insta = inp('instapay_number', 'tel', { maxlength: '11', dir: 'ltr' }), we = inp('wepay_number', 'tel', { maxlength: '11', dir: 'ltr' }), dprice = inp('default_lesson_price', 'number', { min: '0' });
     const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit' }, 'حفظ الإعدادات');
@@ -303,18 +305,20 @@
     const sec = (title, ...kids) => h('div', { class: 'glass-card', style: 'padding:1.4rem;margin-bottom:1.1rem' }, h('h3', { style: 'margin-bottom:1rem;font-weight:900', text: title }), ...kids);
     const form = h('form', { style: 'max-width:640px', novalidate: true },
       sec('حالة صفحة التسجيل', h('p', { class: 'pf-sub', style: 'margin-bottom:1rem' }, 'الحالة الحالية: ', h('strong', { text: (MODES.find((m) => m[0] === (settings.registration_mode || 'registration')) || MODES[0])[1] })), modeBox, field('رسالة القفل (تظهر لما التسجيل يكون مقفول)', closedMsg)),
-      sec('أسعار الاشتراك الشهري', h('div', { class: 'pf-row' }, field('الصف الأول (جنيه)', p1), field('الصف الثاني (جنيه)', p2))),
+      sec('أرقام التواصل (تتطبق على كل لينكات الواتساب والاتصال في الموقع)', h('div', { class: 'pf-row' }, field('رقم الواتساب', wa), field('رقم الاتصال', ph)), h('p', { class: 'pf-sub', style: 'margin:0', text: 'أسعار الاشتراك والخطط بتتعدل من تبويب «الخطط».' })),
       sec('جروبات الواتساب (تظهر بعد التسجيل)', field('جروب الصف الأول', g1), field('جروب الصف الثاني', g2)),
       sec('الدفع والأسعار', h('div', { class: 'pf-row' }, field('رقم إنستا باي', insta), field('رقم WE Pay', we)), field('السعر الافتراضي للحصة الجديدة (جنيه)', dprice)),
       btn, msg);
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); msg.className = 'pf-msg err';
       if (!PHONE_RE.test(insta.value.trim()) || !PHONE_RE.test(we.value.trim())) return (msg.textContent = 'أرقام الدفع لازم تكون 11 رقم صحيح.');
-      if (!(parseInt(p1.value, 10) >= 0) || !(parseInt(p2.value, 10) >= 0)) return (msg.textContent = 'اكتب سعر الاشتراك لكل صف (أرقام فقط).');
+      const waNum = (wa.value || '').replace(/\D/g, '').replace(/^0/, '20'); // 01xxxxxxxxx → 201xxxxxxxxx
+      if (!/^201[0125]\d{8}$/.test(waNum)) return (msg.textContent = 'رقم الواتساب لازم يكون رقم موبايل مصري صحيح (11 رقم).');
+      if (!PHONE_RE.test(ph.value.trim())) return (msg.textContent = 'رقم الاتصال لازم يكون 11 رقم صحيح.');
       for (const g of [g1, g2]) if (g.value.trim() && !WA_RE.test(g.value.trim())) return (msg.textContent = 'رابط جروب الواتساب غير صحيح (لازم يبدأ بـ https://chat.whatsapp.com/).');
       if (mode === 'closed' && !closedMsg.value.trim()) return (msg.textContent = 'اكتب رسالة القفل.');
       btn.disabled = true;
-      const rows = [['registration_mode', mode], ['registration_closed_message', closedMsg.value.trim()], ['sub_price_g1', String(numberOr(p1.value, 150))], ['sub_price_g2', String(numberOr(p2.value, 180))],
+      const rows = [['registration_mode', mode], ['registration_closed_message', closedMsg.value.trim()], ['contact_whatsapp', waNum], ['contact_phone', ph.value.trim()],
         ['group_link_g1', g1.value.trim()], ['group_link_g2', g2.value.trim()], ['instapay_number', insta.value.trim()], ['wepay_number', we.value.trim()], ['default_lesson_price', String(numberOr(dprice.value, 85))]].map(([key, value]) => ({ key, value }));
       const { error } = await sb.from('settings').upsert(rows, { onConflict: 'key' });
       btn.disabled = false;
@@ -325,10 +329,165 @@
     content.replaceChildren(form);
   }
 
+  /* =============== الخطط =============== */
+  const planTxt = (p) => (p.price_egp === 0 ? 'مجانًا' : `${p.price_egp} جنيه` + (p.months === 1 ? ' / شهر' : ` / ${p.months} شهور`));
+  function renderPlans() {
+    toolbar.replaceChildren(h('button', { class: 'pf-btn', type: 'button', onclick: () => planForm() }, '＋ خطة جديدة'),
+      h('span', { class: 'pf-sub', style: 'margin:0', text: 'خطط «اشتراك» الطالب بيشتريها من صفحة الاشتراك. خطط «عرض فقط» بتظهر في صفحة الأسعار بزر تواصل.' }));
+    if (!plans.length) return empty('لا توجد خطط. اضغط «خطة جديدة».');
+    content.replaceChildren(h('div', { class: 'pf-grid' }, plans.map((p) => h('article', { class: 'pf-card glass-card' },
+      h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + (p.is_active ? 'ok' : 'off') }, p.is_active ? 'ظاهرة' : 'مخفية'),
+        h('span', { class: 'pf-badge ' + (p.kind === 'subscription' ? 'lock' : 'info') }, p.kind === 'subscription' ? '⭐ اشتراك' : 'عرض فقط'), h('span', { class: 'pf-badge info' }, gradeLabel(p.grade))),
+      h('h3', { text: p.name }), h('p', { style: 'font-weight:900;color:var(--color-accent);font-size:1.15rem', text: planTxt(p) }),
+      p.details ? h('p', { style: 'white-space:pre-line', text: p.details }) : null,
+      h('div', { class: 'pf-actions' },
+        h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: async () => { const r = await sb.from('plans').update({ is_active: !p.is_active }).eq('id', p.id); if (r.error) return fail(r.error); await loadCatalog(); render(); } }, p.is_active ? 'إخفاء' : 'إظهار'),
+        h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => planForm(p) }, 'تعديل'),
+        h('button', { class: 'pf-btn danger sm', type: 'button', onclick: async () => { if (!confirm(`حذف خطة "${p.name}"؟ طلبات الاشتراك القديمة هتفضل محفوظة.`)) return; const r = await sb.from('plans').delete().eq('id', p.id); if (r.error) return fail(r.error); toast('تم الحذف'); await loadCatalog(); render(); } }, 'حذف'))))));
+  }
+  function planForm(it) {
+    const f = {
+      name: h('input', { class: 'form-input', type: 'text', maxlength: '80', value: it ? it.name : '' }),
+      grade: h('select', { class: 'form-input' }, h('option', { value: 'all' }, 'كل الصفوف'), ...GRADES.map((g) => h('option', { value: g }, g))),
+      kind: h('select', { class: 'form-input' }, h('option', { value: 'subscription' }, '⭐ اشتراك (الطالب بيشتريه من صفحة الاشتراك)'), h('option', { value: 'info' }, 'عرض فقط (زر تواصل)')),
+      price: h('input', { class: 'form-input', type: 'number', min: '0', step: '1', value: it ? it.price_egp : 150 }),
+      months: h('input', { class: 'form-input', type: 'number', min: '1', max: '12', step: '1', value: it ? it.months : 1 }),
+      details: h('textarea', { class: 'form-input', maxlength: '1500', style: 'min-height:120px' }, it ? it.details : ''),
+      cta: h('input', { class: 'form-input', type: 'text', maxlength: '60', value: it ? it.cta_label : '' }),
+      sort: h('input', { class: 'form-input', type: 'number', step: '1', value: it ? it.sort_order : plans.length + 1 }),
+      active: h('input', { type: 'checkbox' })
+    };
+    f.grade.value = it ? it.grade : 'all'; f.kind.value = it ? it.kind : 'subscription'; f.active.checked = it ? it.is_active : true;
+    const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'حفظ');
+    const form = h('form', { novalidate: true }, field('اسم الخطة', f.name), h('div', { class: 'pf-row' }, field('الصف', f.grade), field('النوع', f.kind)),
+      h('div', { class: 'pf-row' }, field('السعر (جنيه)', f.price), field('المدة بالشهور', f.months)),
+      field('التفاصيل (سطر لكل نقطة)', f.details, 'اكتب «العنوان: القيمة» وهتظهر كصف في الكارت، مثال: طريقة الحصص: أونلاين. أي سطر من غير «:» بيظهر كنقطة.'),
+      h('div', { class: 'pf-row' }, field('نص الزر (اختياري)', f.cta), field('الترتيب', f.sort)), h('label', { class: 'pf-check' }, f.active, 'ظاهرة للطلاب'), h('br'), btn, msg);
+    const m = openModal({ title: it ? 'تعديل خطة' : 'خطة جديدة', body: form, wide: true });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); msg.className = 'pf-msg err';
+      const name = f.name.value.trim(); if (name.length < 2) return (msg.textContent = 'اكتب اسم الخطة.');
+      const price = parseInt(f.price.value, 10), months = parseInt(f.months.value, 10);
+      if (!(price >= 0)) return (msg.textContent = 'اكتب سعرًا صحيحًا.'); if (!(months >= 1 && months <= 12)) return (msg.textContent = 'المدة من 1 إلى 12 شهر.');
+      const row = { name, grade: f.grade.value, kind: f.kind.value, price_egp: price, months, details: f.details.value.trim(), cta_label: f.cta.value.trim(), sort_order: numberOr(f.sort.value, 0) || 0, is_active: f.active.checked };
+      btn.disabled = true;
+      const r = it ? await sb.from('plans').update(row).eq('id', it.id) : await sb.from('plans').insert(row);
+      if (r.error) { msg.textContent = friendlyError(r.error); btn.disabled = false; return; }
+      m.close(); toast('تم الحفظ ✅'); await loadCatalog(); render();
+    });
+  }
+
+  /* =============== المحتوى (نصوص + قوائم) =============== */
+  const PAGES = [['site', 'الهيدر والفوتر (كل الصفحات)', 'index.html'], ['index', 'الرئيسية', 'index.html'], ['features', 'المميزات', 'features.html'], ['curriculum', 'المنهج', 'curriculum.html'],
+    ['notebooks', 'المذكرات', 'notebooks.html'], ['pricing', 'الأسعار', 'pricing.html'], ['faq', 'الأسئلة الشائعة', 'faq.html'], ['register', 'التسجيل', 'register.html']];
+  let contentView = 'texts', contentPage = 'index';
+  const norm = (t) => String(t || '').replace(/\s+/g, ' ').trim();
+  async function fetchPage(file) { const r = await fetch(file + '?_=' + Date.now()); if (!r.ok) throw new Error('page'); return new DOMParser().parseFromString(await r.text(), 'text/html'); }
+
+  function renderContent() {
+    const views = [['texts', '✏️ نصوص الصفحات'], ['faq', '❓ الأسئلة الشائعة'], ['curriculum_g1', '🧭 منهج الصف الأول'], ['curriculum_g2', '🧭 منهج الصف الثاني']];
+    const bar = chips(views, contentView, (k) => { contentView = k; render(); });
+    if (contentView === 'texts') return renderTexts(bar);
+    return renderItems(contentView, bar);
+  }
+  async function renderTexts(bar) {
+    toolbar.replaceChildren(...bar); loading();
+    const pageSel = h('select', { class: 'form-input', 'aria-label': 'الصفحة' }, PAGES.map(([k, l]) => h('option', { value: k }, l))); pageSel.value = contentPage;
+    pageSel.addEventListener('change', () => { contentPage = pageSel.value; render(); });
+    let doc, ov;
+    try { [doc, ov] = await Promise.all([fetchPage(PAGES.find((p) => p[0] === contentPage)[2]), sb.from('site_content').select('key,value')]); } catch (e) { return empty('تعذّر تحميل الصفحة.'); }
+    if (ov.error) { fail(ov.error); return empty('تعذّر تحميل التعديلات. تأكد إنك شغّلت ملف 04_cms_plans_drive.sql.'); }
+    const OV = Object.fromEntries((ov.data || []).map((r) => [r.key, r.value]));
+    const root = contentPage === 'site' ? Array.from(doc.querySelectorAll('header [data-k], footer [data-k]')) : Array.from(doc.querySelectorAll('main [data-k]'));
+    const seen = new Set(), rows = [];
+    root.forEach((el) => {
+      const key = el.getAttribute('data-k'); if (seen.has(key)) return; seen.add(key);
+      const sec = el.closest('section'); const secTitle = sec ? norm((sec.querySelector('h1,h2') || {}).textContent) : (el.closest('footer') ? 'الفوتر' : el.closest('header') ? 'الهيدر' : 'عام');
+      rows.push({ key, def: norm(el.textContent), group: secTitle || 'عام', inline: el.tagName === 'SPAN' && el.parentElement && el.parentElement.tagName !== 'BODY', block: el.tagName === 'SPAN' ? el.parentElement : el });
+    });
+    const search = h('input', { class: 'form-input', type: 'search', placeholder: 'بحث في النصوص…', 'aria-label': 'بحث' });
+    const saveBtn = h('button', { class: 'pf-btn', type: 'button' }, '💾 حفظ التعديلات');
+    toolbar.replaceChildren(...bar, h('span', { class: 'pf-spacer', style: 'flex-basis:100%;height:0' }), pageSel, search, h('span', { class: 'pf-spacer' }), saveBtn);
+    const inputs = [];
+    let lastGroup = null, groupBlock = null, groupBox = null; const nodes = [];
+    const rowsMeta = rows;
+    rows.forEach((r) => {
+      if (r.group !== lastGroup) { nodes.push(h('h3', { style: 'margin:1.4rem 0 .6rem;color:var(--color-accent);font-weight:900', text: r.group })); lastGroup = r.group; groupBlock = null; groupBox = null; }
+      const long = r.def.length > 70;
+      const input = h(long ? 'textarea' : 'input', long ? { class: 'form-input', rows: '3' } : { class: 'form-input', type: 'text' }, long ? (OV[r.key] != null ? OV[r.key] : r.def) : null);
+      if (!long) input.value = OV[r.key] != null ? OV[r.key] : r.def;
+      const reset = h('button', { class: 'pf-btn ghost sm', type: 'button', title: 'رجّع النص الأصلي', onclick: () => { input.value = r.def; } }, '↩ الأصلي');
+      const wrap = h('div', { class: 'pf-field', 'data-search': (r.def + ' ' + (OV[r.key] || '')).toLowerCase() }, input,
+        h('div', { class: 'pf-hint-row' }, h('small', {}, 'الأصلي: ' + (r.def.length > 70 ? r.def.slice(0, 70) + '…' : r.def)), reset));
+      inputs.push({ r, input, wrap });
+      if (r.inline) {   // أجزاء من نفس العنوان/الجملة: نجمعها في مربع واحد
+        if (groupBox && r.block === groupBlock) groupBox.append(wrap);
+        else { groupBlock = r.block; groupBox = h('div', { class: 'pf-fieldgroup' }, h('span', { class: 'pf-hint', text: 'أجزاء من نفس العنوان/الجملة — عدّل كل جزء لوحده:' }), wrap); nodes.push(groupBox); }
+      } else { groupBlock = null; groupBox = null; nodes.push(wrap); }
+    });
+    search.addEventListener('input', () => { const q = search.value.trim().toLowerCase(); inputs.forEach(({ wrap }) => { wrap.style.display = !q || wrap.getAttribute('data-search').includes(q) ? '' : 'none'; }); });
+    saveBtn.addEventListener('click', async () => {
+      const up = [], del = [];
+      inputs.forEach(({ r, input }) => { const v = input.value.trim(); if (!v || norm(v) === r.def) { if (r.key in OV) del.push(r.key); } else if (OV[r.key] !== v) up.push({ key: r.key, value: v, updated_at: new Date().toISOString() }); });
+      if (!up.length && !del.length) return toast('مفيش تغييرات للحفظ');
+      saveBtn.disabled = true;
+      if (up.length) { const r = await sb.from('site_content').upsert(up, { onConflict: 'key' }); if (r.error) { saveBtn.disabled = false; return fail(r.error); } }
+      for (const k of del) { const r = await sb.from('site_content').delete().eq('key', k); if (r.error) { saveBtn.disabled = false; return fail(r.error); } }
+      saveBtn.disabled = false; toast(`تم الحفظ ✅ (${up.length} تعديل، ${del.length} رجوع للأصلي) — ظاهر في الموقع فورًا`); render();
+    });
+    content.replaceChildren(h('div', { class: 'pf-note' }, 'عدّل أي نص وبعدين «حفظ التعديلات». النص بيتطبق على الموقع فورًا لكل الزوار. (نص عادي بدون HTML)'), ...nodes);
+  }
+  async function renderItems(coll, bar) {
+    toolbar.replaceChildren(...bar); loading();
+    const { data, error } = await sb.from('site_items').select('*').eq('collection', coll).order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+    if (error) { fail(error); return empty('تعذّر تحميل القائمة. تأكد إنك شغّلت ملف 04_cms_plans_drive.sql.'); }
+    const isFaq = coll === 'faq';
+    toolbar.replaceChildren(...bar, h('span', { class: 'pf-spacer' }), h('button', { class: 'pf-btn', type: 'button', onclick: () => itemForm(coll, null, data.length) }, '＋ إضافة'));
+    if (!data.length) return content.replaceChildren(h('div', { class: 'pf-empty' }, h('p', { text: 'القائمة فاضية، والموقع بيعرض المحتوى الافتراضي. تقدر تستورده هنا وتعدّل عليه وتضيف وتحذف.' }), h('br'), h('button', { class: 'pf-btn', type: 'button', onclick: () => importDefaults(coll) }, '⬇ استيراد المحتوى الحالي')));
+    content.replaceChildren(h('div', { class: 'pf-grid' }, data.map((it) => h('article', { class: 'pf-card glass-card' },
+      h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + (it.is_visible ? 'ok' : 'off') }, it.is_visible ? 'ظاهر' : 'مخفي'), h('span', { class: 'pf-badge info' }, 'ترتيب ' + it.sort_order)),
+      h('h3', { text: it.title }), isFaq && it.body ? h('p', { text: it.body }) : null,
+      h('div', { class: 'pf-actions' },
+        h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: async () => { const r = await sb.from('site_items').update({ is_visible: !it.is_visible }).eq('id', it.id); if (r.error) return fail(r.error); render(); } }, it.is_visible ? 'إخفاء' : 'إظهار'),
+        h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => itemForm(coll, it, data.length) }, 'تعديل'),
+        h('button', { class: 'pf-btn danger sm', type: 'button', onclick: async () => { if (!confirm('حذف العنصر؟')) return; const r = await sb.from('site_items').delete().eq('id', it.id); if (r.error) return fail(r.error); toast('تم الحذف'); render(); } }, 'حذف'))))));
+  }
+  function itemForm(coll, it, count) {
+    const isFaq = coll === 'faq';
+    const title = h('textarea', { class: 'form-input', maxlength: '300', style: 'min-height:70px' }, it ? it.title : '');
+    const body = h('textarea', { class: 'form-input', maxlength: '3000', style: 'min-height:120px' }, it ? it.body : '');
+    const sort = h('input', { class: 'form-input', type: 'number', step: '1', value: it ? it.sort_order : (count + 1) * 10 });
+    const vis = h('input', { type: 'checkbox' }); vis.checked = it ? it.is_visible : true;
+    const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'حفظ');
+    const form = h('form', { novalidate: true }, field(isFaq ? 'السؤال' : 'النص', title), isFaq ? field('الإجابة', body) : null, field('الترتيب', sort, 'الأصغر يظهر أولًا'), h('label', { class: 'pf-check' }, vis, 'ظاهر في الموقع'), h('br'), btn, msg);
+    const m = openModal({ title: it ? 'تعديل' : 'إضافة', body: form, wide: true });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); msg.className = 'pf-msg err';
+      if (!title.value.trim()) return (msg.textContent = 'اكتب النص.'); if (isFaq && !body.value.trim()) return (msg.textContent = 'اكتب الإجابة.');
+      const row = { collection: coll, title: title.value.trim(), body: isFaq ? body.value.trim() : '', sort_order: parseInt(sort.value, 10) || 0, is_visible: vis.checked };
+      btn.disabled = true;
+      const r = it ? await sb.from('site_items').update(row).eq('id', it.id) : await sb.from('site_items').insert(row);
+      if (r.error) { msg.textContent = friendlyError(r.error); btn.disabled = false; return; }
+      m.close(); toast('تم الحفظ ✅'); render();
+    });
+  }
+  async function importDefaults(coll) {
+    try {
+      let items = [];
+      if (coll === 'faq') { const d = await fetchPage('faq.html'); items = Array.from(d.querySelectorAll('.faq-item')).map((x) => ({ title: norm((x.querySelector('summary') || {}).textContent), body: norm((x.querySelector('p') || {}).textContent) })); }
+      else { const d = await fetchPage('curriculum.html'); items = Array.from(d.querySelectorAll(`[data-cms-list="${coll}"] li`)).map((x) => ({ title: norm(x.textContent), body: '' })); }
+      items = items.filter((x) => x.title);
+      if (!items.length) return toast('ما لقيتش محتوى افتراضي للاستيراد', 'err');
+      const r = await sb.from('site_items').insert(items.map((x, i) => ({ collection: coll, title: x.title, body: x.body, sort_order: (i + 1) * 10, is_visible: true })));
+      if (r.error) return fail(r.error);
+      toast(`تم استيراد ${items.length} عنصر ✅`); render();
+    } catch (e) { fail(e); }
+  }
+
   /* =============== التنقل =============== */
   function render() {
     $$('#tabs .pf-tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
-    ({ orders: renderOrders, subs: renderSubs, registrations: renderRegistrations, lessons: renderLessons, pdfs: renderPdfs, students: renderStudents, settings: renderSettings })[tab]();
+    ({ orders: renderOrders, subs: renderSubs, registrations: renderRegistrations, lessons: renderLessons, pdfs: renderPdfs, plans: renderPlans, content: renderContent, students: renderStudents, settings: renderSettings })[tab]();
   }
   $$('#tabs .pf-tab').forEach((t) => t.addEventListener('click', () => { tab = t.dataset.tab; render(); }));
   await loadCatalog(); refreshCounts(); render();

@@ -5,5 +5,7 @@ window.MH_CONFIG = {
   SUPABASE_URL: 'https://ikqgcciuiavelvztgkpg.supabase.co',
   // مفتاح anon (legacy JWT): يعمل مع كل إصدارات المكتبة. البديل الأحدث: sb_publishable_hnOYcvtOjtOKcNbSDaiV4g_Yu44Tarl
   SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlrcWdjY2l1aWF2ZWx2enRna3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1OTEyODIsImV4cCI6MjEwODE2NzI4Mn0.IM5BG8yqgzuYAMQN2nvlZ6sFMCViHI6UwrVIytHcYWM',
-  WHATSAPP: '201555109204'
+  WHATSAPP: '201555109204',
+  // فعّلها (true) فقط بعد ما تعمل Custom SMTP في Supabase وتضيف {{ .Token }} لقالب Reset Password (الدليل: PLATFORM-README-AR.md)
+  OTP_RESET: false
 };

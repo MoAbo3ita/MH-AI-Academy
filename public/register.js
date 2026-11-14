@@ -6,16 +6,16 @@
   const root = document.getElementById('registerRoot');
   if (!M || !root) return;
   const { sb, h, toast, friendlyError, PHONE_RE, GRADES, uuid, fmtDate, getUser, getProfile, CFG } = M;
-  const WA = (CFG && CFG.WHATSAPP) || '201555109204';
   const S = {}; // الإعدادات العامة
-
-  const price = (g) => parseInt(g === GRADES[0] ? S.sub_price_g1 : S.sub_price_g2, 10) || 0;
+  const WA = () => ((S.contact_whatsapp || (CFG && CFG.WHATSAPP) || '201555109204').replace(/\D/g, ''));
+  let PLANS = []; // خطط الاشتراك (من لوحة الأدمن)
+  const planTxt = (p) => (p.price_egp === 0 ? 'مجانًا' : `${p.price_egp} جنيه` + (p.months === 1 ? ' / شهر' : ` / ${p.months} شهور`));
   const groupLink = (g) => (g === GRADES[0] ? S.group_link_g1 : S.group_link_g2) || '';
   const view = (...n) => root.replaceChildren(...n);
   const card = (...k) => h('div', { class: 'glass-card reg-card' }, ...k);
   const heading = (a, accent, desc) => h('div', { class: 'section-head' },
     h('h1', { class: 'section-title' }, a + ' ', h('span', { class: 'gradient-text', text: accent })), desc ? h('p', { class: 'section-desc', text: desc }) : null);
-  const waBtn = (text, msg) => h('a', { class: 'btn btn-whatsapp btn-glow', target: '_blank', rel: 'noopener noreferrer', href: `https://wa.me/${WA}?text=${encodeURIComponent(msg || 'السلام عليكم')}` },
+  const waBtn = (text, msg) => h('a', { class: 'btn btn-whatsapp btn-glow', target: '_blank', rel: 'noopener noreferrer', href: `https://wa.me/${WA()}?text=${encodeURIComponent(msg || 'السلام عليكم')}` },
     h('img', { src: 'assets/icons/whatsapp.svg', alt: '', width: '20', height: '20' }), text);
   const digits = (input) => input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 11); });
   const field = (label, input, hint) => h('div', { class: 'pf-field' }, h('label', { text: label }), input, hint ? h('small', { text: hint }) : null);
@@ -25,6 +25,8 @@
     const { data, error } = await sb.from('settings').select('key,value');
     if (error) throw error;
     (data || []).forEach((r) => { S[r.key] = r.value; });
+    const pl = await sb.from('plans').select('*').eq('kind', 'subscription').eq('is_active', true).order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+    PLANS = pl.data || [];
   }
 
   /* ---------- 1) التسجيل مقفول ---------- */
@@ -84,7 +86,8 @@
 
   /* ---------- 3) الاشتراك (مدفوع) ---------- */
   function planList() {
-    return h('div', { class: 'reg-plans' }, GRADES.map((g) => h('div', { class: 'reg-plan' }, h('strong', { text: g }), h('span', { class: 'reg-price', text: `${price(g)} جنيه / شهر` }))));
+    if (!PLANS.length) return h('p', { class: 'reg-lead', text: 'لا توجد خطط اشتراك متاحة حاليًا. تواصل معنا.' });
+    return h('div', { class: 'reg-plans' }, PLANS.map((p) => h('div', { class: 'reg-plan' }, h('strong', { text: p.name }), h('span', { class: 'reg-price', text: planTxt(p) }))));
   }
   async function renderSubscription() {
     const user = await getUser();
@@ -109,11 +112,19 @@
     if (pending) return view(heading('الاشتراك في', 'المنصة'), card(...status, h('div', { class: 'pf-actions', style: 'justify-content:center' }, waBtn('تواصل معنا'), h('a', { class: 'pf-btn ghost', href: 'lessons.html' }, 'الحصص'))));
 
     const numbers = { instapay: S.instapay_number || '01555109204', wepay: S.wepay_number || '01559160083' };
-    let method = 'instapay';
+    let method = 'instapay', planId = null;
     const grade = h('select', { class: 'form-input' }, ...GRADES.map((g) => h('option', { value: g }, g)));
     grade.value = profile.grade || GRADES[0];
-    const amount = h('strong', { text: `${price(grade.value)} جنيه` });
-    grade.addEventListener('change', () => { amount.textContent = `${price(grade.value)} جنيه`; });
+    const planBox = h('div', { class: 'pf-pay', id: 'planBox' });
+    const amount = h('strong', { text: '—' });
+    const drawPlans = () => {
+      const list = PLANS.filter((p) => p.grade === 'all' || p.grade === grade.value);
+      planId = list[0] ? list[0].id : null; amount.textContent = list[0] ? planTxt(list[0]) : '—';
+      if (!list.length) return planBox.replaceChildren(h('p', { class: 'pf-sub', text: 'لا توجد خطط متاحة لهذا الصف حاليًا. تواصل معنا.' }));
+      planBox.replaceChildren(...list.map((p, i) => h('label', {}, h('input', { type: 'radio', name: 'plan', value: p.id, checked: i === 0, onchange: () => { planId = p.id; amount.textContent = planTxt(p); } }),
+        h('span', {}, p.name, p.details ? [h('br'), h('small', { style: 'color:var(--text-secondary);font-weight:600', text: p.details.split(/\r?\n/)[0] })] : null), h('span', { class: 'pf-num', text: planTxt(p) }))));
+    };
+    grade.addEventListener('change', drawPlans); drawPlans();
     const parent = h('input', { class: 'form-input', type: 'tel', inputmode: 'numeric', maxlength: '11', dir: 'ltr', value: profile.parent_phone || '', placeholder: '01xxxxxxxxx' });
     const sender = h('input', { class: 'form-input', type: 'tel', inputmode: 'numeric', maxlength: '11', dir: 'ltr', value: profile.phone || '', placeholder: '01xxxxxxxxx' });
     const ref = h('input', { class: 'form-input', type: 'text', maxlength: '60', dir: 'ltr', placeholder: 'اختياري لو رفعت صورة الإيصال' });
@@ -125,16 +136,18 @@
     const msg = h('p', { class: 'pf-msg', role: 'alert' });
     const btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'إرسال طلب الاشتراك');
     const form = h('form', { novalidate: true },
-      h('div', { class: 'pf-note' }, 'قيمة الاشتراك الشهري: ', amount, '. حوّل المبلغ على أحد الأرقام ثم ارفع صورة الإيصال، وهنفعّل اشتراكك بعد مراجعة الدفع.'),
-      field('الصف', grade), field('رقم ولي الأمر (إجباري)', parent),
+      field('الصف', grade), h('div', { class: 'pf-field' }, h('label', { text: 'اختر الخطة' }), planBox),
+      h('div', { class: 'pf-note' }, 'قيمة الخطة المختارة: ', amount, '. حوّل المبلغ على أحد الأرقام ثم ارفع صورة الإيصال، وهنفعّل اشتراكك بعد مراجعة الدفع.'),
+      field('رقم ولي الأمر (إجباري)', parent),
       h('div', { class: 'pf-pay' }, rI, rW), h('div', { style: 'margin-bottom:1rem' }, copy),
       field('رقم الموبايل اللي حوّلت منه', sender), field('رقم العملية (اختياري)', ref),
       field('صورة الإيصال', file, 'صورة JPG/PNG/WEBP حتى 5MB. لازم ترفع الصورة أو تكتب رقم العملية.'), btn, msg);
-    view(heading('الاشتراك في', 'المنصة', active ? 'تقدر تجدّد أو تمدّد اشتراكك من هنا.' : 'اختر صفّك وادفع لتفعيل اشتراكك.'), card(...status, form));
+    view(heading('الاشتراك في', 'المنصة', active ? 'تقدر تجدّد أو تمدّد اشتراكك من هنا.' : 'اختر خطتك وادفع لتفعيل اشتراكك.'), card(...status, form));
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const f = file.files[0], txn = ref.value.trim(), pPhone = parent.value.trim();
+      if (!planId) return say(msg, 'اختر خطة اشتراك.', 'err');
       if (!pPhone) return say(msg, 'رقم ولي الأمر إجباري.', 'err');
       if (!PHONE_RE.test(pPhone)) return say(msg, 'رقم ولي الأمر غير صحيح.', 'err');
       if (!PHONE_RE.test(sender.value.trim())) return say(msg, 'رقم الموبايل المحوَّل منه غير صحيح.', 'err');
@@ -154,7 +167,7 @@
           const r = await sb.storage.from('receipts').upload(receiptPath, f, { contentType: f.type, upsert: false });
           if (r.error) throw r.error;
         }
-        const ins = await sb.from('subscriptions').insert({ grade: grade.value, method, sender_phone: sender.value.trim(), transaction_ref: txn, receipt_path: receiptPath });
+        const ins = await sb.from('subscriptions').insert({ plan_id: planId, grade: grade.value, method, sender_phone: sender.value.trim(), transaction_ref: txn, receipt_path: receiptPath });
         if (ins.error) { if (receiptPath) await sb.storage.from('receipts').remove([receiptPath]); throw ins.error; }
         toast('تم إرسال طلب الاشتراك ✅'); await renderSubscription();
       } catch (err) { say(msg, err && err.code === '23505' ? 'عندك طلب اشتراك قيد المراجعة بالفعل.' : friendlyError(err), 'err'); btn.disabled = false; btn.textContent = 'إرسال طلب الاشتراك'; }

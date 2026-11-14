@@ -48,7 +48,16 @@
         <p class="pf-note">اكتب إيميلك وهنبعتلك رابط لإعادة تعيين كلمة المرور.</p>
         <div class="pf-field"><label for="fgEmail">الإيميل</label><input class="form-input" id="fgEmail" type="email" autocomplete="email" dir="ltr" required></div>
         <button class="pf-btn" type="submit" style="width:100%">إرسال الرابط</button>
-        <p style="text-align:center;margin-top:1rem"><button class="pf-link" type="button" id="backLogin">رجوع لتسجيل الدخول</button></p>
+        <p style="text-align:center;margin-top:1rem"><span id="otpLinkWrap"><button class="pf-link" type="button" id="toOtp">عندي كود من الإيميل</button> · </span><button class="pf-link" type="button" id="backLogin">رجوع لتسجيل الدخول</button></p>
+      </form>
+
+      <form id="otpForm" novalidate hidden>
+        <p class="pf-note">افتح الإيميل اللي وصلك (شوف الـ Spam كمان) وهتلاقي <strong>كود</strong> من أرقام. اكتبه هنا مع كلمة المرور الجديدة. الكود بيشتغل حتى لو الرابط ما فتحش.</p>
+        <div class="pf-field"><label for="otpEmail">الإيميل</label><input class="form-input" id="otpEmail" type="email" autocomplete="email" dir="ltr" required></div>
+        <div class="pf-field"><label for="otpCode">الكود</label><input class="form-input" id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" dir="ltr" placeholder="123456" required></div>
+        <div class="pf-field"><label for="otpPass">كلمة المرور الجديدة</label><input class="form-input" id="otpPass" type="password" autocomplete="new-password" minlength="8" placeholder="8 أحرف على الأقل" required></div>
+        <button class="pf-btn" type="submit" style="width:100%">تأكيد وتغيير كلمة المرور</button>
+        <p style="text-align:center;margin-top:1rem"><button class="pf-link" type="button" id="backForgot">إرسال كود جديد</button></p>
       </form>
 
       <form id="recoveryForm" novalidate hidden>

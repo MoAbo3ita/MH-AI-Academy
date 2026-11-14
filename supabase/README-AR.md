@@ -63,3 +63,8 @@
 - رقم ولي الأمر إجباري (مع التحقق في قاعدة البيانات).
 - محتوى "للمشتركين فقط" (حصص وملفات) ومدة الاشتراك لكل طالب.
 بعد التشغيل: `select key, value from public.settings order by key;` لازم يظهر `registration_mode = registration`.
+
+---
+## تحديث: الخطوة 4 — الخطط ومحرر المحتوى وفيديو Drive (ملف `04_cms_plans_drive.sql`)
+شغّله بعد 01 و02 و03. بيضيف: الحصة الهجينة (شراء فردي + مشتركين)، فيديو Google Drive، جدول الخطط، جداول محتوى الموقع القابل للتعديل، وأرقام التواصل.
+فحص بعد التشغيل: `select name, price_egp, months from public.plans order by sort_order;` لازم يظهر خطتين (150 و180).
