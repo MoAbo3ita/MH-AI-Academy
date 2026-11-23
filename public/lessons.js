@@ -7,7 +7,7 @@
   const { user, profile } = ctx;
   renderHeader({ active: 'lessons', profile });
 
-  let settings = {}, lessons = [], pdfs = [], orders = [];
+  let settings = {}, lessons = [], allLessons = [], pdfs = [], orders = [];
   let tab = 'lessons';
   let gradeFilter = profile.grade || '';
   const content = $('#content'), toolbar = $('#toolbar');
@@ -23,14 +23,19 @@
     const firstErr = l.error || p.error || o.error;
     if (firstErr) toast(friendlyError(firstErr), 'err');
     // الأدمن يقرأ كل شيء (حتى المخفي) بحكم الصلاحيات؛ هنا نعرض للطالب المنشور فقط
-    lessons = (l.data || []).filter((x) => x.is_published); pdfs = (p.data || []).filter((x) => x.is_published); orders = o.data || []; settings = s || {};
+    allLessons = l.data || []; lessons = allLessons.filter((x) => x.is_published); pdfs = (p.data || []).filter((x) => x.is_published); orders = o.data || []; settings = s || {};
     $('#subtitle').textContent = 'الحصص المجانية تفتح فورًا، والحصص المدفوعة تتفعّل بعد مراجعة الدفع.';
     renderSubBanner();
   }
 
   /* ---------- منطق الوصول (العرض فقط — الحماية الحقيقية في قاعدة البيانات) ---------- */
   const isSubscribed = () => !!(profile.subscribed_until && new Date(profile.subscribed_until) > new Date());
-  const hasAccess = (type, item) => profile.role === 'admin' || item.is_free || (item.for_subscribers && isSubscribed()) || orders.some((o) => o.item_type === type && o.item_id === item.id && o.status === 'approved');
+  const bundleOwned = (lessonId) => orders.some((o) => o.item_type === 'bundle' && o.item_id === lessonId && o.status === 'approved');
+  const hasAccess = (type, item) => profile.role === 'admin' || item.is_free || (item.for_subscribers && isSubscribed()) || orders.some((o) => o.item_type === type && o.item_id === item.id && o.status === 'approved')
+    || (type === 'lesson' && bundleOwned(item.id)) || (type === 'pdf' && allLessons.some((l) => l.pdf_id === item.id && bundleOwned(l.id)));
+  // باقة (حصة + ملف): الحصة مربوطة بملف منشور غير مجاني وليها سعر باقة
+  const bundleFile = (l) => (l.pdf_id && l.bundle_price_egp != null && !l.is_free && l.allow_purchase !== false) ? pdfs.find((p) => p.id === l.pdf_id && !p.is_free) || null : null;
+  const pendingFor = (l) => orders.some((o) => o.status === 'pending' && o.item_id === l.id && (o.item_type === 'lesson' || o.item_type === 'bundle'));
   const latestOrder = (type, id) => orders.find((o) => o.item_type === type && o.item_id === id); // الأحدث أولًا
   const gradeOk = (it) => !gradeFilter || it.grade === 'all' || it.grade === gradeFilter;
 
@@ -46,8 +51,11 @@
     const openLabel = type === 'lesson' ? '▶ شاهد الحصة' : '⬇ فتح الملف';
     if (hasAccess(type, item)) return h('button', { class: 'pf-btn', type: 'button', onclick: open }, openLabel);
     const out = [];
-    if (canBuy(item)) {                                   // شراء فردي
-      const last = latestOrder(type, item.id);
+    const bf = type === 'lesson' ? bundleFile(item) : null;
+    if (bf && canBuy(item) && !hasAccess('pdf', bf) && !pendingFor(item)) {   // اختيار: حصة / ملف / الاتنين
+      out.push(h('button', { class: 'pf-btn', type: 'button', onclick: () => openChoice(item, bf) }, `اشترِ (من ${Math.min(item.price_egp, bf.price_egp, item.bundle_price_egp)} ج)`));
+    } else if (canBuy(item)) {                            // شراء فردي
+      const last = type === 'lesson' ? (orders.find((o) => (o.item_type === 'lesson' || o.item_type === 'bundle') && o.item_id === item.id)) : latestOrder(type, item.id);
       if (last && last.status === 'pending') out.push(h('button', { class: 'pf-btn ghost', type: 'button', disabled: true }, '⏳ طلبك قيد المراجعة'));
       else {
         if (last && last.status === 'rejected') out.push(h('p', { class: 'pf-badge rejected', style: 'width:100%' }, 'تم رفض طلبك السابق' + (last.admin_note ? ': ' + last.admin_note : '')));
@@ -96,7 +104,9 @@
   }
   function renderOrders() {
     if (!orders.length) return content.replaceChildren(h('p', { class: 'pf-empty', text: 'لسه ما عملتش أي طلب دفع.' }));
-    const title = (o) => { const src = o.item_type === 'lesson' ? lessons : pdfs; const it = src.find((x) => x.id === o.item_id); return it ? it.title : (o.item_type === 'lesson' ? 'حصة' : 'ملف'); };
+    const title = (o) => {
+      if (o.item_type === 'bundle') { const l = allLessons.find((x) => x.id === o.item_id); const f = l && pdfs.find((p) => p.id === l.pdf_id); return l ? '📦 ' + l.title + (f ? ' + ' + f.title : ' + ملف') : 'باقة'; }
+      const src = o.item_type === 'lesson' ? lessons : pdfs; const it = src.find((x) => x.id === o.item_id); return it ? it.title : (o.item_type === 'lesson' ? 'حصة' : 'ملف'); };
     const label = { pending: 'قيد المراجعة ⏳', approved: 'تم القبول ✓', rejected: 'مرفوض' };
     content.replaceChildren(h('div', { class: 'pf-grid' }, orders.map((o) => h('article', { class: 'pf-card glass-card' },
       h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + o.status }, label[o.status] || o.status), h('span', { class: 'pf-badge off' }, o.method === 'instapay' ? 'إنستا باي' : 'WE Pay')),
@@ -123,8 +133,30 @@
     if (win) { win.opener = null; win.location.href = data.signedUrl; } else location.href = data.signedUrl;
   }
 
+  /* ---------- اختيار الباقة: الحصة / الملف / الاتنين ---------- */
+  function openChoice(lesson, pdf) {
+    const lOwned = hasAccess('lesson', lesson), fOwned = hasAccess('pdf', pdf);
+    const sum = lesson.price_egp + pdf.price_egp, save = sum - lesson.bundle_price_egp;
+    const opts = [
+      { v: 'lesson', t: 'الحصة فقط', p: lesson.price_egp, off: lOwned || pendingFor(lesson) },
+      { v: 'pdf', t: 'الملف فقط: ' + pdf.title, p: pdf.price_egp, off: fOwned || orders.some((o) => o.item_type === 'pdf' && o.item_id === pdf.id && o.status === 'pending') },
+      { v: 'bundle', t: 'الحصة + الملف (باقة)', p: lesson.bundle_price_egp, off: lOwned || fOwned || pendingFor(lesson), note: save > 0 ? `وفّر ${save} ج` : '' }
+    ];
+    let pick = (opts.find((o) => !o.off) || {}).v;
+    const list = h('div', { class: 'pf-pay', style: 'flex-direction:column;align-items:stretch' }, opts.map((o) => h('label', { style: o.off ? 'opacity:.5' : '' },
+      h('input', { type: 'radio', name: 'choice', value: o.v, disabled: o.off, checked: o.v === pick, onchange: () => { pick = o.v; } }),
+      ' ' + o.t, h('span', { class: 'pf-num', text: `${o.p} ج` }), o.note ? h('span', { class: 'pf-badge ok', text: o.note }) : null)));
+    const go = h('button', { class: 'pf-btn', type: 'button', style: 'width:100%', onclick: () => {
+      if (!pick) return; m.close();
+      if (pick === 'lesson') openPurchase('lesson', lesson); else if (pick === 'pdf') openPurchase('pdf', pdf); else openPurchase('bundle', lesson);
+    } }, 'متابعة للدفع');
+    const m = openModal({ title: 'اختر اللي تشتريه', body: h('div', {}, h('p', { class: 'pf-sub', text: lesson.title }), list, go) });
+  }
+
   /* ---------- الشراء (إنستا باي / WE Pay) ---------- */
   function openPurchase(type, item) {
+    const price = type === 'bundle' ? item.bundle_price_egp : item.price_egp;
+    const pf = type === 'bundle' ? pdfs.find((p) => p.id === item.pdf_id) : null;
     const numbers = { instapay: settings.instapay_number || '01555109204', wepay: settings.wepay_number || '01559160083' };
     let method = 'instapay';
     const rI = h('label', {}, h('input', { type: 'radio', name: 'method', value: 'instapay', checked: true, onchange: () => { method = 'instapay'; } }), 'إنستا باي', h('span', { class: 'pf-num', text: numbers.instapay }));
@@ -136,7 +168,7 @@
     const btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'إرسال الطلب');
     const copy = h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: async () => { const n = numbers[method]; try { await navigator.clipboard.writeText(n); toast('تم نسخ الرقم'); } catch (e) { toast(n); } } }, 'نسخ رقم الدفع');
     const form = h('form', { novalidate: true },
-      h('div', { class: 'pf-note' }, `${type === 'lesson' ? 'الحصة' : 'الملف'}: `, h('strong', { text: item.title }), h('br'), `المبلغ المطلوب: `, h('strong', { text: `${item.price_egp} جنيه` }), h('br'), 'حوّل المبلغ على أحد الأرقام، ثم اكتب رقم الموبايل اللي حوّلت منه وارفع صورة الإيصال. هنراجع الدفع ونفعّل لك.'),
+      h('div', { class: 'pf-note' }, `${type === 'bundle' ? 'الباقة' : type === 'lesson' ? 'الحصة' : 'الملف'}: `, h('strong', { text: item.title + (pf ? ' + ' + pf.title : '') }), h('br'), `المبلغ المطلوب: `, h('strong', { text: `${price} جنيه` }), h('br'), 'حوّل المبلغ على أحد الأرقام، ثم اكتب رقم الموبايل اللي حوّلت منه وارفع صورة الإيصال. هنراجع الدفع ونفعّل لك، وهيوصلك إيميل بالتفعيل (ومعاه الملف لو اشتريته).'),
       h('div', { class: 'pf-pay' }, rI, rW), h('div', { style: 'margin-bottom:1rem' }, copy),
       h('div', { class: 'pf-field' }, h('label', { text: 'رقم الموبايل اللي حوّلت منه' }), phone),
       h('div', { class: 'pf-field' }, h('label', { text: 'رقم العملية (اختياري)' }), ref),

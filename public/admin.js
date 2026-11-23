@@ -57,12 +57,14 @@
     refreshCounts();
     if (!orders.length) return empty('لا توجد طلبات في هذه القائمة.');
     const P = await profilesFor(orders.map((o) => o.user_id));
-    const itemTitle = (o) => { const it = (o.item_type === 'lesson' ? lessons : pdfs).find((x) => x.id === o.item_id); return it ? it.title : '(محذوف)'; };
+    const itemTitle = (o) => {
+      if (o.item_type === 'bundle') { const l = lessons.find((x) => x.id === o.item_id); const f = l && pdfs.find((p) => p.id === l.pdf_id); return l ? '📦 ' + l.title + ' + ' + (f ? f.title : 'ملف') : '(محذوف)'; }
+      const it = (o.item_type === 'lesson' ? lessons : pdfs).find((x) => x.id === o.item_id); return it ? it.title : '(محذوف)'; };
     const st = { pending: 'معلّق ⏳', approved: 'مقبول ✓', rejected: 'مرفوض' };
     content.replaceChildren(h('div', { class: 'pf-grid' }, orders.map((o) => {
       const p = P[o.user_id] || {};
       return h('article', { class: 'pf-card glass-card pf-order' },
-        h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + o.status }, st[o.status]), h('span', { class: 'pf-badge off' }, o.method === 'instapay' ? 'إنستا باي' : 'WE Pay'), h('span', { class: 'pf-badge info' }, o.item_type === 'lesson' ? 'حصة' : 'ملف')),
+        h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + o.status }, st[o.status]), h('span', { class: 'pf-badge off' }, o.method === 'instapay' ? 'إنستا باي' : 'WE Pay'), h('span', { class: 'pf-badge info' }, o.item_type === 'lesson' ? 'حصة' : o.item_type === 'bundle' ? 'باقة' : 'ملف')),
         h('h3', { text: itemTitle(o) }), kv('الطالب', p.full_name || '—'), kv('الصف', p.grade || '—'),
         h('div', { class: 'pf-kv' }, h('span', {}, 'تليفون الطالب'), waLink(p.phone)), h('div', { class: 'pf-kv' }, h('span', {}, 'ولي الأمر'), waLink(p.parent_phone)),
         kv('المبلغ المطلوب', `${o.amount_egp} ج`), kv('حوّل من رقم', o.sender_phone), kv('رقم العملية', o.transaction_ref || '—'), kv('التاريخ', fmtDate(o.created_at)), o.admin_note ? kv('ملاحظة', o.admin_note) : null,
@@ -157,7 +159,8 @@
     const a = accessOf(it);
     return h('article', { class: 'pf-card glass-card' },
       h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + (it.is_published ? 'ok' : 'off') }, it.is_published ? 'منشور' : 'مخفي'),
-        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين فقط' : a === 'both' ? `⭐ مشتركين + شراء ${it.price_egp} ج` : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade))),
+        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين فقط' : a === 'both' ? `⭐ مشتركين + شراء ${it.price_egp} ج` : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade)),
+        type === 'lesson' && it.pdf_id && it.bundle_price_egp != null ? h('span', { class: 'pf-badge ok' }, `📦 باقة ${it.bundle_price_egp} ج`) : null),
       h('h3', { text: it.title }), it.description ? h('p', { text: it.description }) : null,
       h('div', { class: 'pf-actions' },
         h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => patch({ is_published: !it.is_published }) }, it.is_published ? 'إخفاء' : 'نشر'),
@@ -199,12 +202,17 @@
     f.dur = h('input', { class: 'form-input', type: 'number', min: '0', value: it && it.duration_minutes ? it.duration_minutes : '' });
     f.prov = h('select', { class: 'form-input' }, ...[['youtube', 'يوتيوب (غير مدرج)'], ['drive', 'Google Drive (لازم الملف يكون متاح لأي حد معاه الرابط)'], ['vimeo', 'Vimeo'], ['bunny', 'Bunny Stream'], ['url', 'رابط ملف فيديو مباشر (mp4)']].map(([v, l]) => h('option', { value: v }, l)));
     f.video = h('input', { class: 'form-input', type: 'text', dir: 'ltr', placeholder: 'الصق رابط الفيديو هنا' });
+    f.pdf = h('select', { class: 'form-input' }, h('option', { value: '' }, 'بدون ملف مرتبط'), ...pdfs.map((p) => h('option', { value: p.id }, p.title)));
+    f.pdf.value = it && it.pdf_id ? it.pdf_id : '';
+    f.bundle = h('input', { class: 'form-input', type: 'number', min: '0', step: '1', placeholder: 'مثال: 100', value: it && it.bundle_price_egp != null ? it.bundle_price_egp : '' });
+    const syncB = () => { f.bundle.disabled = !f.pdf.value || !['paid', 'both'].includes(f.access.value); }; f.pdf.addEventListener('change', syncB); f.access.addEventListener('change', syncB); syncB();
     f.video.addEventListener('input', () => { const d = detectProvider(f.video.value); if (d) f.prov.value = d; });
     const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'حفظ');
     const form = h('form', { novalidate: true },
       field('عنوان الحصة', f.title), field('الوصف (اختياري)', f.desc), h('div', { class: 'pf-row' }, field('الصف', f.grade), field('المدة بالدقائق', f.dur)),
       h('div', { class: 'pf-row' }, field('مصدر الفيديو', f.prov), field('رابط/معرّف الفيديو', f.video, it ? 'اتركه فارغًا للإبقاء على الفيديو الحالي' : null)),
       field('نوع الإتاحة', f.access, accessHint), h('div', { class: 'pf-row' }, field('السعر (جنيه)', f.price), field('الترتيب', f.sort, 'الأصغر يظهر أولًا')),
+      h('div', { class: 'pf-row' }, field('ملف مرتبط بالحصة (اختياري)', f.pdf, 'لو اخترت ملف وكتبت سعر باقة، الطالب يختار: الحصة / الملف / الاتنين'), field('سعر الباقة (حصة + ملف)', f.bundle, 'اتركه فارغًا لو مفيش باقة')),
       h('label', { class: 'pf-check' }, f.pub, 'منشورة (ظاهرة للطلاب)'), h('br'), btn, msg);
     if (it) sb.from('lesson_media').select('*').eq('lesson_id', it.id).maybeSingle().then(({ data }) => { if (data) f.prov.value = data.provider; });
     const m = openModal({ title: it ? 'تعديل حصة' : 'حصة جديدة', body: form, wide: true });
@@ -213,7 +221,8 @@
       const title = f.title.value.trim(); if (title.length < 3) return (msg.textContent = 'اكتب عنوانًا للحصة.');
       const raw = f.video.value.trim(); let ref = null;
       if (raw || !it) { ref = normalizeVideo(f.prov.value, raw); if (!ref) return (msg.textContent = 'رابط الفيديو غير صالح لهذا المصدر. تأكد من اللينك أو اختر المصدر الصحيح.'); }
-      const row = { ...rowFrom(f, title), duration_minutes: f.dur.value ? numberOr(f.dur.value, null) : null };
+      const hasB = !!f.pdf.value && f.bundle.value !== '' && !f.bundle.disabled;
+      const row = { ...rowFrom(f, title), duration_minutes: f.dur.value ? numberOr(f.dur.value, null) : null, pdf_id: f.pdf.value || null, bundle_price_egp: hasB ? numberOr(f.bundle.value, null) : null };
       btn.disabled = true; msg.className = 'pf-msg'; msg.textContent = 'جارٍ الحفظ…';
       try {
         let id = it && it.id;
