@@ -153,6 +153,10 @@
     remove: async (paths) => { paths.forEach((p) => delete S.storage[b + '/' + p]); save(); return { data: [], error: null }; } }) };
   const rpc = async (fn, a) => {
     const err = (m) => ({ data: null, error: { message: m } });
+<<<<<<< HEAD
+=======
+    if (fn === 'mark_lesson_viewed') { S.lesson_views = S.lesson_views || []; if (me() && hasAccess('lesson', a.p_lesson) && !S.lesson_views.some((v) => v.user_id === me() && v.lesson_id === a.p_lesson)) S.lesson_views.push({ user_id: me(), lesson_id: a.p_lesson }); save(); return { data: null, error: null }; }
+>>>>>>> 55b4195 (update)
     if (!isAdmin()) return err('غير مسموح');
     const addMonths = (d, m) => { const x = new Date(d); x.setMonth(x.getMonth() + m); return x.toISOString(); };
     const extend = (uid_, m) => { const p = S.profiles.find((x) => x.id === uid_); const base = p.subscribed_until && new Date(p.subscribed_until) > new Date() ? p.subscribed_until : new Date().toISOString(); p.subscribed_until = addMonths(base, m); };
@@ -164,7 +168,16 @@
       S.log.push('rpc review_subscription ' + a.p_status); save(); return { data: null, error: null };
     }
     if (fn === 'grant_subscription') { if (a.p_months < 1 || a.p_months > 12) return err('عدد الشهور غير صحيح'); extend(a.p_user, a.p_months); S.log.push('rpc grant'); save(); return { data: null, error: null }; }
+<<<<<<< HEAD
     if (fn === 'revoke_subscription') { S.profiles.find((x) => x.id === a.p_user).subscribed_until = null; S.log.push('rpc revoke'); save(); return { data: null, error: null }; }
+=======
+    if (fn === 'revoke_subscription') { S.profiles.find((x) => x.id === a.p_user).subscribed_until = null; S.log.push('rpc revoke:' + (a.p_reason || '')); save(); return { data: null, error: null }; }
+    if (fn === 'student_progress') {
+      if (!isAdmin()) return err('غير مسموح'); S.lesson_views = S.lesson_views || [];
+      const pub = S.lessons.filter((l) => l.is_published);
+      return { data: S.profiles.filter((p) => p.role === 'student').map((p) => ({ user_id: p.id, watched: S.lesson_views.filter((v) => v.user_id === p.id && pub.some((l) => l.id === v.lesson_id)).length, total: pub.filter((l) => l.grade === 'all' || l.grade === p.grade).length })), error: null };
+    }
+>>>>>>> 55b4195 (update)
     return err('unknown rpc');
   };
   window.supabase = { createClient: () => ({ auth, from: (t) => new Q(t), storage, rpc }) };

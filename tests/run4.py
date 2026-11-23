@@ -24,7 +24,11 @@ with sync_playwright() as p:
     pg.click('text=＋ حصة جديدة'); pg.wait_for_selector('.pf-modal'); pg.fill('.pf-modal input[type=text] >> nth=0','حصة الباقة')
     pg.fill('.pf-modal input[placeholder="الصق رابط الفيديو هنا"]','https://youtu.be/dQw4w9WgXcQ')
     check('bundle price disabled until a file is linked', pg.is_disabled('.pf-modal input[placeholder="مثال: 100"]'))
+<<<<<<< HEAD
     pg.select_option('.pf-modal select >> nth=3',label='تدريبات متقدمة'); check('bundle price enabled after linking a file', not pg.is_disabled('.pf-modal input[placeholder="مثال: 100"]'))
+=======
+    pg.select_option('.pf-modal select >> nth=3',label='من قسم الملفات: تدريبات متقدمة'); check('bundle price enabled after linking a file', not pg.is_disabled('.pf-modal input[placeholder="مثال: 100"]'))
+>>>>>>> 55b4195 (update)
     pg.fill('.pf-modal input[placeholder="مثال: 100"]','100'); pg.click('.pf-modal button[type=submit]'); pg.wait_for_timeout(500)
     L=[x for x in state()['lessons'] if x['title']=='حصة الباقة']; P2=[x for x in state()['pdf_files'] if x['title']=='تدريبات متقدمة'][0]
     check('lesson saved with pdf_id + bundle_price_egp=100', L and L[0]['pdf_id']==P2['id'] and L[0]['bundle_price_egp']==100, str(L[:1]))

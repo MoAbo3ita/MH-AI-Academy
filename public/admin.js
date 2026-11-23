@@ -159,8 +159,7 @@
     const a = accessOf(it);
     return h('article', { class: 'pf-card glass-card' },
       h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + (it.is_published ? 'ok' : 'off') }, it.is_published ? 'منشور' : 'مخفي'),
-        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين فقط' : a === 'both' ? `⭐ مشتركين + شراء ${it.price_egp} ج` : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade)),
-        type === 'lesson' && it.pdf_id && it.bundle_price_egp != null ? h('span', { class: 'pf-badge ok' }, `📦 باقة ${it.bundle_price_egp} ج`) : null),
+        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين فقط' : a === 'both' ? `⭐ مشتركين + شراء ${it.price_egp} ج` : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade))),
       h('h3', { text: it.title }), it.description ? h('p', { text: it.description }) : null,
       h('div', { class: 'pf-actions' },
         h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => patch({ is_published: !it.is_published }) }, it.is_published ? 'إخفاء' : 'نشر'),
@@ -170,6 +169,7 @@
   async function removeItem(type, it) {
     if (!confirm(`حذف "${it.title}" نهائيًا؟ لا يمكن التراجع.`)) return;
     if (type === 'pdf') await sb.storage.from('pdfs').remove([it.file_path]);
+    if (type === 'lesson' && it.pdf_id) { const own = pdfs.find((p) => p.id === it.pdf_id && p.lesson_only); if (own) await sb.storage.from('pdfs').remove([own.file_path]); }
     const { error } = await sb.from(type === 'lesson' ? 'lessons' : 'pdf_files').delete().eq('id', it.id);
     if (error) return fail(error);
     toast('تم الحذف'); await loadCatalog(); render();
@@ -202,17 +202,12 @@
     f.dur = h('input', { class: 'form-input', type: 'number', min: '0', value: it && it.duration_minutes ? it.duration_minutes : '' });
     f.prov = h('select', { class: 'form-input' }, ...[['youtube', 'يوتيوب (غير مدرج)'], ['drive', 'Google Drive (لازم الملف يكون متاح لأي حد معاه الرابط)'], ['vimeo', 'Vimeo'], ['bunny', 'Bunny Stream'], ['url', 'رابط ملف فيديو مباشر (mp4)']].map(([v, l]) => h('option', { value: v }, l)));
     f.video = h('input', { class: 'form-input', type: 'text', dir: 'ltr', placeholder: 'الصق رابط الفيديو هنا' });
-    f.pdf = h('select', { class: 'form-input' }, h('option', { value: '' }, 'بدون ملف مرتبط'), ...pdfs.map((p) => h('option', { value: p.id }, p.title)));
-    f.pdf.value = it && it.pdf_id ? it.pdf_id : '';
-    f.bundle = h('input', { class: 'form-input', type: 'number', min: '0', step: '1', placeholder: 'مثال: 100', value: it && it.bundle_price_egp != null ? it.bundle_price_egp : '' });
-    const syncB = () => { f.bundle.disabled = !f.pdf.value || !['paid', 'both'].includes(f.access.value); }; f.pdf.addEventListener('change', syncB); f.access.addEventListener('change', syncB); syncB();
     f.video.addEventListener('input', () => { const d = detectProvider(f.video.value); if (d) f.prov.value = d; });
     const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'حفظ');
     const form = h('form', { novalidate: true },
       field('عنوان الحصة', f.title), field('الوصف (اختياري)', f.desc), h('div', { class: 'pf-row' }, field('الصف', f.grade), field('المدة بالدقائق', f.dur)),
       h('div', { class: 'pf-row' }, field('مصدر الفيديو', f.prov), field('رابط/معرّف الفيديو', f.video, it ? 'اتركه فارغًا للإبقاء على الفيديو الحالي' : null)),
       field('نوع الإتاحة', f.access, accessHint), h('div', { class: 'pf-row' }, field('السعر (جنيه)', f.price), field('الترتيب', f.sort, 'الأصغر يظهر أولًا')),
-      h('div', { class: 'pf-row' }, field('ملف مرتبط بالحصة (اختياري)', f.pdf, 'لو اخترت ملف وكتبت سعر باقة، الطالب يختار: الحصة / الملف / الاتنين'), field('سعر الباقة (حصة + ملف)', f.bundle, 'اتركه فارغًا لو مفيش باقة')),
       h('label', { class: 'pf-check' }, f.pub, 'منشورة (ظاهرة للطلاب)'), h('br'), btn, msg);
     if (it) sb.from('lesson_media').select('*').eq('lesson_id', it.id).maybeSingle().then(({ data }) => { if (data) f.prov.value = data.provider; });
     const m = openModal({ title: it ? 'تعديل حصة' : 'حصة جديدة', body: form, wide: true });
@@ -221,25 +216,31 @@
       const title = f.title.value.trim(); if (title.length < 3) return (msg.textContent = 'اكتب عنوانًا للحصة.');
       const raw = f.video.value.trim(); let ref = null;
       if (raw || !it) { ref = normalizeVideo(f.prov.value, raw); if (!ref) return (msg.textContent = 'رابط الفيديو غير صالح لهذا المصدر. تأكد من اللينك أو اختر المصدر الصحيح.'); }
-      const hasB = !!f.pdf.value && f.bundle.value !== '' && !f.bundle.disabled;
-      const row = { ...rowFrom(f, title), duration_minutes: f.dur.value ? numberOr(f.dur.value, null) : null, pdf_id: f.pdf.value || null, bundle_price_egp: hasB ? numberOr(f.bundle.value, null) : null };
+      const row = { ...rowFrom(f, title), duration_minutes: f.dur.value ? numberOr(f.dur.value, null) : null };
       btn.disabled = true; msg.className = 'pf-msg'; msg.textContent = 'جارٍ الحفظ…';
       try {
         let id = it && it.id;
         if (it) { const r = await sb.from('lessons').update(row).eq('id', id); if (r.error) throw r.error; }
         else { const r = await sb.from('lessons').insert(row).select().single(); if (r.error) throw r.error; id = r.data.id; }
+        // لو الأدمن حذف ملف الحصة أو بدّله بملف من القسم: امسح القديم
+        if (own && (f.pdf.value === '__none' || f.pdf.value)) { await sb.from('pdf_files').delete().eq('id', own.id); await sb.storage.from('pdfs').remove([own.file_path]); }
+        if (oldOwnPath) await sb.storage.from('pdfs').remove([oldOwnPath]);
         if (ref) {
           const mm = await sb.from('lesson_media').upsert({ lesson_id: id, provider: f.prov.value, video_ref: ref }, { onConflict: 'lesson_id' });
           if (mm.error) { if (!it) await sb.from('lessons').delete().eq('id', id); throw mm.error; }
         } else if (it) { await sb.from('lesson_media').update({ provider: f.prov.value }).eq('lesson_id', id); }
         m.close(); toast('تم الحفظ ✅'); await loadCatalog(); render();
-      } catch (err) { msg.className = 'pf-msg err'; msg.textContent = friendlyError(err); btn.disabled = false; }
+      } catch (err) {
+        if (newPdfId) await sb.from('pdf_files').delete().eq('id', newPdfId);
+        if (newPath) await sb.storage.from('pdfs').remove([newPath]);
+        msg.className = 'pf-msg err'; msg.textContent = friendlyError(err); btn.disabled = false; }
     });
   }
   function renderPdfs() {
     toolbar.replaceChildren(h('button', { class: 'pf-btn', type: 'button', onclick: () => pdfForm() }, '＋ رفع ملف PDF'));
-    if (!pdfs.length) return empty('لسه ما رفعتش أي ملف.');
-    content.replaceChildren(h('div', { class: 'pf-grid' }, pdfs.map((p) => itemCard('pdf', p))));
+    const lib = pdfs.filter((p) => !p.lesson_only);   // ملفات الحصص بتظهر جوه الحصة بس
+    if (!lib.length) return empty('لسه ما رفعتش أي ملف.');
+    content.replaceChildren(h('div', { class: 'pf-grid' }, lib.map((p) => itemCard('pdf', p))));
   }
   function pdfForm(it) {
     const f = basicFields(it);
@@ -272,8 +273,10 @@
   /* =============== الطلاب =============== */
   async function renderStudents() {
     toolbar.replaceChildren(); loading();
-    const { data, error } = await sb.from('profiles').select('*').eq('role', 'student').order('created_at', { ascending: false }).limit(2000);
+    const [pr, prog] = await Promise.all([sb.from('profiles').select('*').eq('role', 'student').order('created_at', { ascending: false }).limit(2000), sb.rpc('student_progress')]);
+    const { data, error } = pr;
     if (error) { fail(error); return empty('تعذّر تحميل الطلاب.'); }
+    const progress = {}; ((prog && prog.data) || []).forEach((r) => { progress[r.user_id] = r; });
     const search = h('input', { class: 'form-input', type: 'search', placeholder: 'بحث بالاسم أو الرقم…', 'aria-label': 'بحث' });
     toolbar.replaceChildren(search, h('span', { class: 'pf-badge info', text: `${data.length} طالب` }));
     const tbody = h('tbody');
@@ -284,13 +287,14 @@
         const active = p.subscribed_until && new Date(p.subscribed_until) > new Date();
         return h('tr', {}, h('td', { text: p.full_name || '—' }), h('td', {}, waLink(p.phone)), h('td', {}, waLink(p.parent_phone)), h('td', { text: p.grade || '—' }),
           h('td', {}, active ? h('span', { class: 'pf-badge ok', text: 'حتى ' + new Date(p.subscribed_until).toLocaleDateString('ar-EG-u-nu-latn') }) : h('span', { class: 'pf-badge off', text: 'غير مشترك' })),
+          h('td', {}, progress[p.id] ? h('span', { class: 'pf-badge info', text: `شاهد ${progress[p.id].watched} من ${progress[p.id].total} حصة` }) : h('span', { class: 'pf-badge off', text: '—' })),
           h('td', {}, h('div', { class: 'pf-actions', style: 'padding:0;margin:0' },
             h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => { const m = parseInt(prompt('عدد شهور الاشتراك اللي هتضيفها:', '1'), 10); if (!Number.isFinite(m)) return; if (m < 1 || m > 12) return toast('عدد الشهور بين 1 و 12', 'err'); subRpc('grant_subscription', { p_user: p.id, p_months: m }, 'تم تمديد الاشتراك ✅'); } }, '＋ اشتراك'),
-            active ? h('button', { class: 'pf-btn danger sm', type: 'button', onclick: () => { if (confirm(`إلغاء اشتراك "${p.full_name}"؟`)) subRpc('revoke_subscription', { p_user: p.id }, 'تم إلغاء الاشتراك'); } }, 'إلغاء') : null)));
+            active ? h('button', { class: 'pf-btn danger sm', type: 'button', onclick: () => { const why = prompt(`سبب إلغاء اشتراك "${p.full_name}" (هيوصله على الإيميل):`, ''); if (why === null) return; subRpc('revoke_subscription', { p_user: p.id, p_reason: why.trim() }, 'تم إلغاء الاشتراك وإبلاغ الطالب'); } }, 'إلغاء') : null)));
       }));
     };
     search.addEventListener('input', draw); draw();
-    content.replaceChildren(data.length ? h('div', { class: 'pf-table-wrap' }, h('table', { class: 'pf-table', style: 'min-width:860px' }, h('thead', {}, h('tr', {}, ...['الاسم', 'الموبايل', 'ولي الأمر', 'الصف', 'الاشتراك', 'إجراءات'].map((t) => h('th', { text: t })))), tbody)) : h('p', { class: 'pf-empty', text: 'لا يوجد طلاب بحسابات بعد (التسجيل العام في تبويب "التسجيلات").' }));
+    content.replaceChildren(data.length ? h('div', { class: 'pf-table-wrap' }, h('table', { class: 'pf-table', style: 'min-width:860px' }, h('thead', {}, h('tr', {}, ...['الاسم', 'الموبايل', 'ولي الأمر', 'الصف', 'الاشتراك', 'الحصص المشاهَدة', 'إجراءات'].map((t) => h('th', { text: t })))), tbody)) : h('p', { class: 'pf-empty', text: 'لا يوجد طلاب بحسابات بعد (التسجيل العام في تبويب "التسجيلات").' }));
   }
 
   /* =============== الإعدادات (وفيها التحكم في حالة التسجيل) =============== */

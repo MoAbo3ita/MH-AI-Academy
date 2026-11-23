@@ -54,13 +54,14 @@
     const phone = h('input', { class: 'form-input', type: 'tel', inputmode: 'numeric', maxlength: '11', dir: 'ltr', placeholder: '01xxxxxxxxx', autocomplete: 'tel' });
     const parent = h('input', { class: 'form-input', type: 'tel', inputmode: 'numeric', maxlength: '11', dir: 'ltr', placeholder: '01xxxxxxxxx', autocomplete: 'off' });
     const grade = h('select', { class: 'form-input' }, h('option', { value: '' }, 'اختر الصف الدراسي'), ...GRADES.map((g) => h('option', { value: g }, g)));
+    const email = h('input', { class: 'form-input', type: 'email', dir: 'ltr', maxlength: '120', autocomplete: 'email', placeholder: 'example@gmail.com (اختياري)' });
     const hp = h('input', { type: 'text', tabindex: '-1', autocomplete: 'off', name: 'website', id: 'website' });
     const msg = h('p', { class: 'pf-msg', role: 'alert' });
     const btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'سجّل الآن');
     digits(phone); digits(parent);
     const form = h('form', { novalidate: true },
       field('الاسم بالكامل', name), field('رقم هاتف الطالب', phone), field('رقم ولي الأمر (إجباري)', parent, 'لازم رقم صحيح من 11 رقم — هنتواصل معاه بخصوص متابعة مستواك.'),
-      field('الصف الدراسي', grade), h('div', { class: 'hp-field', 'aria-hidden': 'true' }, h('label', { for: 'website', text: 'اترك هذا الحقل فارغًا' }), hp),
+      field('الصف الدراسي', grade), field('الإيميل (اختياري)', email, 'هيوصلك عليه تأكيد التسجيل وأي تحديثات.'), h('div', { class: 'hp-field', 'aria-hidden': 'true' }, h('label', { for: 'website', text: 'اترك هذا الحقل فارغًا' }), hp),
       btn, msg, h('p', { class: 'form-note', text: 'نستخدم بياناتك فقط للتواصل معك بخصوص الاشتراك.' }));
     view(heading('سجّل', 'الآن', 'املأ البيانات التالية، وبعد نجاح التسجيل هيظهر لك جروب الواتساب الخاص بصفك.'), card(form));
 
@@ -72,6 +73,7 @@
       if (!v.parent_phone) return say(msg, 'رقم ولي الأمر إجباري.', 'err');
       if (!PHONE_RE.test(v.parent_phone)) return say(msg, 'رقم ولي الأمر غير صحيح (11 رقم يبدأ بـ 010 أو 011 أو 012 أو 015).', 'err');
       if (!v.grade) return say(msg, 'اختر الصف الدراسي.', 'err');
+      const em = email.value.trim(); if (em) { if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return say(msg, 'الإيميل غير صحيح.', 'err'); v.email = em; }
       btn.disabled = true; btn.textContent = 'جارٍ التسجيل…'; say(msg, '');
       const { error } = await sb.from('registrations').insert(v);
       if (!error) return renderSuccess(v.grade, false);
