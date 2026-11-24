@@ -5,12 +5,12 @@
   const M = window.MH;
   const root = document.getElementById('registerRoot');
   if (!M || !root) return;
-  const { sb, h, toast, friendlyError, PHONE_RE, GRADES, uuid, fmtDate, getUser, getProfile, CFG } = M;
+  const { sb, h, toast, friendlyError, PHONE_RE, GRADES, GRADE_INFO, loadGrades, uuid, fmtDate, getUser, getProfile, CFG } = M;
   const S = {}; // الإعدادات العامة
   const WA = () => ((S.contact_whatsapp || (CFG && CFG.WHATSAPP) || '201555109204').replace(/\D/g, ''));
   let PLANS = []; // خطط الاشتراك (من لوحة الأدمن)
   const planTxt = (p) => (p.price_egp === 0 ? 'مجانًا' : `${p.price_egp} جنيه` + (p.months === 1 ? ' / شهر' : ` / ${p.months} شهور`));
-  const groupLink = (g) => (g === GRADES[0] ? S.group_link_g1 : S.group_link_g2) || '';
+  const groupLink = (g) => (GRADE_INFO[g] && GRADE_INFO[g].whatsapp_group) || (g === 'الصف الأول الثانوي' ? S.group_link_g1 : g === 'الصف الثاني الثانوي' ? S.group_link_g2 : '') || '';
   const view = (...n) => root.replaceChildren(...n);
   const card = (...k) => h('div', { class: 'glass-card reg-card' }, ...k);
   const heading = (a, accent, desc) => h('div', { class: 'section-head' },
@@ -24,7 +24,8 @@
   async function loadSettings() {
     const [st, pl] = await Promise.all([
       sb.from('settings').select('key,value'),
-      sb.from('plans').select('*').eq('kind', 'subscription').eq('is_active', true).order('sort_order', { ascending: true }).order('created_at', { ascending: true })
+      sb.from('plans').select('*').eq('kind', 'subscription').eq('is_active', true).order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+      loadGrades()
     ]);
     if (st.error) throw st.error;
     (st.data || []).forEach((r) => { S[r.key] = r.value; });

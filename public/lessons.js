@@ -8,7 +8,8 @@
     sb.from('lessons').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
     sb.from('pdf_files').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
     sb.from('orders').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
-    loadSettings()
+    loadSettings(),
+    M.loadGrades()
   ]);
   let early = M.getUser().then((u) => (u ? fetchAll(u.id) : null)).catch(() => null);
   const ctx = await requireUser(); if (!ctx) return;

@@ -3,12 +3,12 @@
   const M = window.MH; if (!M) return;
   const { sb, h, $, $$, toast, openModal, friendlyError, requireUser, renderHeader, loadSettings, normalizeVideo, detectProvider, PHONE_RE, uuid, GRADES, fmtDate, gradeLabel } = M;
 
-  const ctx = await requireUser({ admin: true }); if (!ctx) return;
-  renderHeader({ active: 'admin', profile: ctx.profile });
+  const ctxP = requireUser({ admin: true });   // البروفايل بيتحمّل بالتوازي مع باقي البيانات (أسرع)
 
   const content = $('#content'), toolbar = $('#toolbar');
   let tab = 'orders', orderFilter = 'pending', subFilter = 'pending';
-  let settings = {}, lessons = [], pdfs = [], plans = [];
+  let settings = {}, lessons = [], pdfs = [], plans = [], allGrades = [];
+  const pre = { orders: null };   // تحميل مبكر لأول قايمة طلبات
 
   const numberOr = (v, d) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : d; };
   const loading = () => content.replaceChildren(h('p', { class: 'pf-loading', text: 'جارٍ التحميل…' }));
@@ -20,15 +20,17 @@
   const chips = (list, current, set) => list.map(([k, label]) => h('button', { class: 'pf-btn sm ' + (current === k ? '' : 'ghost'), type: 'button', onclick: () => set(k) }, label));
 
   async function loadCatalog() {
-    const [l, p, s, pl] = await Promise.all([
+    const [l, p, s, pl, gr] = await Promise.all([
       sb.from('lessons').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false }),
       sb.from('pdf_files').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: false }),
       loadSettings(),
-      sb.from('plans').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
+      sb.from('plans').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+      sb.from('grades').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
     ]);
     if (l.error || p.error) fail(l.error || p.error);
-    lessons = l.data || []; pdfs = p.data || []; settings = s || {}; plans = (pl && pl.data) || [];
+    lessons = l.data || []; pdfs = p.data || []; settings = s || {}; plans = (pl && pl.data) || []; allGrades = (gr && !gr.error && gr.data) || [];
   }
+  const gradeNames = () => (allGrades.length ? allGrades.map((g) => g.name) : GRADES);
   async function refreshCounts() {
     const [o, s] = await Promise.all([
       sb.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -40,6 +42,16 @@
     const { data } = await sb.from('profiles').select('*').in('id', [...new Set(ids)]);
     return Object.fromEntries((data || []).map((p) => [p.id, p]));
   }
+  // الطلبات/الاشتراكات + بيانات الطالب في طلب واحد (دالة 08). لو لسه ما اتشغّلتش بنرجع للطريقة القديمة.
+  async function listWithStudents(kind, status, early) {
+    const r = early ? await early : await sb.rpc(kind === 'orders' ? 'admin_orders' : 'admin_subscriptions', { p_status: status, p_limit: 300 });
+    if (!r.error && Array.isArray(r.data)) return { rows: r.data, P: Object.fromEntries(r.data.map((x) => [x.user_id, x.student || {}])), error: null };
+    let q = sb.from(kind).select('*').order('created_at', { ascending: false }).limit(300);
+    if (status !== 'all') q = q.eq('status', status);
+    const { data, error } = await q;
+    if (error) return { rows: [], P: {}, error };
+    return { rows: data, P: await profilesFor(data.map((x) => x.user_id)), error: null };
+  }
   async function showReceipt(path) {
     const { data, error } = await sb.storage.from('receipts').createSignedUrl(path, 300);
     if (error || !data) return fail(error || 'تعذّر فتح الإيصال');
@@ -50,13 +62,11 @@
   async function renderOrders() {
     toolbar.replaceChildren(...chips([['pending', 'معلّقة'], ['approved', 'مقبولة'], ['rejected', 'مرفوضة'], ['all', 'الكل']], orderFilter, (k) => { orderFilter = k; render(); }));
     loading();
-    let q = sb.from('orders').select('*').order('created_at', { ascending: false }).limit(300);
-    if (orderFilter !== 'all') q = q.eq('status', orderFilter);
-    const { data: orders, error } = await q;
+    const early = orderFilter === 'pending' ? pre.orders : null; pre.orders = null;
+    const { rows: orders, P, error } = await listWithStudents('orders', orderFilter, early);
     if (error) { fail(error); return empty('تعذّر تحميل الطلبات.'); }
     refreshCounts();
     if (!orders.length) return empty('لا توجد طلبات في هذه القائمة.');
-    const P = await profilesFor(orders.map((o) => o.user_id));
     const itemTitle = (o) => {
       if (o.item_type === 'bundle') { const l = lessons.find((x) => x.id === o.item_id); const f = l && pdfs.find((p) => p.id === l.pdf_id); return l ? '📦 ' + l.title + ' + ' + (f ? f.title : 'ملف') : '(محذوف)'; }
       const it = (o.item_type === 'lesson' ? lessons : pdfs).find((x) => x.id === o.item_id); return it ? it.title : '(محذوف)'; };
@@ -87,13 +97,10 @@
   async function renderSubs() {
     toolbar.replaceChildren(...chips([['pending', 'معلّقة'], ['approved', 'مقبولة'], ['rejected', 'مرفوضة'], ['all', 'الكل']], subFilter, (k) => { subFilter = k; render(); }));
     loading();
-    let q = sb.from('subscriptions').select('*').order('created_at', { ascending: false }).limit(300);
-    if (subFilter !== 'all') q = q.eq('status', subFilter);
-    const { data: subs, error } = await q;
+    const { rows: subs, P, error } = await listWithStudents('subscriptions', subFilter, null);
     if (error) { fail(error); return empty('تعذّر تحميل طلبات الاشتراك. تأكد إنك شغّلت ملف 03_registration_control.sql.'); }
     refreshCounts();
     if (!subs.length) return empty('لا توجد طلبات اشتراك في هذه القائمة.');
-    const P = await profilesFor(subs.map((s) => s.user_id));
     const st = { pending: 'معلّق ⏳', approved: 'مقبول ✓', rejected: 'مرفوض' };
     content.replaceChildren(h('div', { class: 'pf-grid' }, subs.map((s) => {
       const p = P[s.user_id] || {};
@@ -135,7 +142,7 @@
     const { data, error } = await sb.from('registrations').select('*').order('created_at', { ascending: false }).limit(3000);
     if (error) { fail(error); return empty('تعذّر تحميل التسجيلات. تأكد إنك شغّلت ملف 03_registration_control.sql.'); }
     const search = h('input', { class: 'form-input', type: 'search', placeholder: 'بحث بالاسم أو الرقم…', 'aria-label': 'بحث' });
-    const gsel = h('select', { class: 'form-input', 'aria-label': 'الصف' }, h('option', { value: '' }, 'كل الصفوف'), ...GRADES.map((g) => h('option', { value: g }, g)));
+    const gsel = h('select', { class: 'form-input', 'aria-label': 'الصف' }, h('option', { value: '' }, 'كل الصفوف'), ...gradeNames().map((g) => h('option', { value: g }, g)));
     let view = data;
     toolbar.replaceChildren(search, gsel, h('span', { class: 'pf-badge info', id: 'regCount' }), h('span', { class: 'pf-spacer' }),
       h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => exportCsv(view) }, '⬇ تصدير CSV'));
@@ -159,7 +166,9 @@
     const a = accessOf(it);
     return h('article', { class: 'pf-card glass-card' },
       h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + (it.is_published ? 'ok' : 'off') }, it.is_published ? 'منشور' : 'مخفي'),
-        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين فقط' : a === 'both' ? `⭐ مشتركين + شراء ${it.price_egp} ج` : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade))),
+        h('span', { class: 'pf-badge ' + (a === 'free' ? 'free' : 'lock') }, a === 'free' ? 'مجاني' : a === 'subscribers' ? '⭐ للمشتركين فقط' : a === 'both' ? `⭐ مشتركين + شراء ${it.price_egp} ج` : `مدفوع ${it.price_egp} ج`), h('span', { class: 'pf-badge info' }, gradeLabel(it.grade)),
+        type === 'lesson' && it.pdf_id ? h('span', { class: 'pf-badge ok' }, `📎 ملف ${(pdfs.find((p) => p.id === it.pdf_id) || {}).price_egp ?? ''} ج`) : null,
+        type === 'lesson' && it.pdf_id && it.bundle_price_egp != null ? h('span', { class: 'pf-badge ok' }, `📦 باقة ${it.bundle_price_egp} ج`) : null),
       h('h3', { text: it.title }), it.description ? h('p', { text: it.description }) : null,
       h('div', { class: 'pf-actions' },
         h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => patch({ is_published: !it.is_published }) }, it.is_published ? 'إخفاء' : 'نشر'),
@@ -178,7 +187,7 @@
     const f = {
       title: h('input', { class: 'form-input', type: 'text', maxlength: '140', value: it ? it.title : '' }),
       desc: h('textarea', { class: 'form-input', maxlength: '600' }, it ? it.description : ''),
-      grade: h('select', { class: 'form-input' }, h('option', { value: 'all' }, 'كل الصفوف'), ...GRADES.map((g) => h('option', { value: g }, g))),
+      grade: h('select', { class: 'form-input' }, h('option', { value: 'all' }, 'كل الصفوف'), ...gradeNames().map((g) => h('option', { value: g }, g))),
       access: h('select', { class: 'form-input' }, h('option', { value: 'paid' }, 'مدفوع (شراء فردي فقط)'), h('option', { value: 'both' }, '⭐ شراء فردي + مفتوح للمشتركين'), h('option', { value: 'subscribers' }, '⭐ للمشتركين فقط (بدون شراء فردي)'), h('option', { value: 'free' }, 'مجاني لكل الطلاب المسجّلين')),
       pub: h('input', { type: 'checkbox' }),
       price: h('input', { class: 'form-input', type: 'number', min: '0', step: '1', value: it ? it.price_egp : numberOr(settings.default_lesson_price, 85) }),
@@ -202,12 +211,25 @@
     f.dur = h('input', { class: 'form-input', type: 'number', min: '0', value: it && it.duration_minutes ? it.duration_minutes : '' });
     f.prov = h('select', { class: 'form-input' }, ...[['youtube', 'يوتيوب (غير مدرج)'], ['drive', 'Google Drive (لازم الملف يكون متاح لأي حد معاه الرابط)'], ['vimeo', 'Vimeo'], ['bunny', 'Bunny Stream'], ['url', 'رابط ملف فيديو مباشر (mp4)']].map(([v, l]) => h('option', { value: v }, l)));
     f.video = h('input', { class: 'form-input', type: 'text', dir: 'ltr', placeholder: 'الصق رابط الفيديو هنا' });
+    const own = it && it.pdf_id ? pdfs.find((p) => p.id === it.pdf_id && p.lesson_only) : null;   // ملف الحصة الحالي (لو اترفع معاها)
+    f.file = h('input', { class: 'form-input', type: 'file', accept: 'application/pdf' });
+    f.filePrice = h('input', { class: 'form-input', type: 'number', min: '0', step: '1', value: own ? own.price_egp : 40 });
+    f.pdf = h('select', { class: 'form-input' }, h('option', { value: '' }, own ? 'الإبقاء على ملف الحصة الحالي' : 'بدون ملف جاهز'), ...(own ? [h('option', { value: '__none' }, 'حذف ملف الحصة')] : []),
+      ...pdfs.filter((p) => !p.lesson_only).map((p) => h('option', { value: p.id }, 'من قسم الملفات: ' + p.title)));
+    f.pdf.value = it && it.pdf_id && !own ? it.pdf_id : '';
+    f.bundle = h('input', { class: 'form-input', type: 'number', min: '0', step: '1', placeholder: 'مثال: 100', value: it && it.bundle_price_egp != null ? it.bundle_price_egp : '' });
+    const hasFile = () => f.file.files.length > 0 || (f.pdf.value !== '__none' && (f.pdf.value !== '' || !!own || !!(it && it.pdf_id)));
+    const syncB = () => { f.bundle.disabled = !hasFile() || !['paid', 'both'].includes(f.access.value); f.filePrice.disabled = !(f.file.files.length > 0 || (own && f.pdf.value === '')); };
+    f.file.addEventListener('change', syncB); f.pdf.addEventListener('change', syncB); f.access.addEventListener('change', syncB); syncB();
     f.video.addEventListener('input', () => { const d = detectProvider(f.video.value); if (d) f.prov.value = d; });
     const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit', style: 'width:100%' }, 'حفظ');
     const form = h('form', { novalidate: true },
       field('عنوان الحصة', f.title), field('الوصف (اختياري)', f.desc), h('div', { class: 'pf-row' }, field('الصف', f.grade), field('المدة بالدقائق', f.dur)),
       h('div', { class: 'pf-row' }, field('مصدر الفيديو', f.prov), field('رابط/معرّف الفيديو', f.video, it ? 'اتركه فارغًا للإبقاء على الفيديو الحالي' : null)),
       field('نوع الإتاحة', f.access, accessHint), h('div', { class: 'pf-row' }, field('السعر (جنيه)', f.price), field('الترتيب', f.sort, 'الأصغر يظهر أولًا')),
+      h('div', { class: 'pf-note', style: 'margin:.6rem 0' }, '📎 ملف الحصة: ارفع الـ PDF مع الحصة وحدد سعره. بيتباع من جوه الحصة بس (مش بيظهر في قسم «الملفات»). الطالب يختار: الحصة / الملف / الاتنين.'),
+      h('div', { class: 'pf-row' }, field(own ? 'استبدال ملف الحصة (اختياري)' : 'ملف PDF للحصة (اختياري)', f.file, 'حتى 50MB'), field('سعر الملف (جنيه)', f.filePrice, 'بيتباع لوحده بالسعر ده')),
+      h('div', { class: 'pf-row' }, field('أو اربط ملف جاهز من قسم الملفات', f.pdf), field('سعر الباقة (حصة + ملف)', f.bundle, 'اتركه فارغًا لو مفيش باقة. لازم يكون في ملف.')),
       h('label', { class: 'pf-check' }, f.pub, 'منشورة (ظاهرة للطلاب)'), h('br'), btn, msg);
     if (it) sb.from('lesson_media').select('*').eq('lesson_id', it.id).maybeSingle().then(({ data }) => { if (data) f.prov.value = data.provider; });
     const m = openModal({ title: it ? 'تعديل حصة' : 'حصة جديدة', body: form, wide: true });
@@ -216,9 +238,28 @@
       const title = f.title.value.trim(); if (title.length < 3) return (msg.textContent = 'اكتب عنوانًا للحصة.');
       const raw = f.video.value.trim(); let ref = null;
       if (raw || !it) { ref = normalizeVideo(f.prov.value, raw); if (!ref) return (msg.textContent = 'رابط الفيديو غير صالح لهذا المصدر. تأكد من اللينك أو اختر المصدر الصحيح.'); }
-      const row = { ...rowFrom(f, title), duration_minutes: f.dur.value ? numberOr(f.dur.value, null) : null };
-      btn.disabled = true; msg.className = 'pf-msg'; msg.textContent = 'جارٍ الحفظ…';
+      const file = f.file.files[0];
+      if (file && file.type !== 'application/pdf') return (msg.textContent = 'ملف الحصة لازم يكون PDF.');
+      if (file && file.size > 50 * 1024 * 1024) return (msg.textContent = 'حجم الملف أكبر من 50MB.');
+      const keepOwn = !!own && f.pdf.value === '';
+      if ((file || keepOwn) && !(parseInt(f.filePrice.value, 10) >= 0)) return (msg.textContent = 'اكتب سعر الملف.');
+      const hasB = hasFile() && f.bundle.value !== '' && !f.bundle.disabled;
+      const row = { ...rowFrom(f, title), duration_minutes: f.dur.value ? numberOr(f.dur.value, null) : null, bundle_price_egp: hasB ? numberOr(f.bundle.value, null) : null };
+      btn.disabled = true; msg.className = 'pf-msg'; msg.textContent = file ? 'جارٍ رفع الملف…' : 'جارٍ الحفظ…';
+      let newPath = null, newPdfId = null, oldOwnPath = null;
       try {
+        // ملف الحصة: صف في pdf_files بعلامة lesson_only (مخفي من قسم الملفات)
+        const pdfRow = { title: title + ' — ملف الحصة', description: '', grade: f.grade.value, is_free: false, for_subscribers: ['subscribers', 'both'].includes(f.access.value),
+          allow_purchase: ['paid', 'both', 'free'].includes(f.access.value), price_egp: numberOr(f.filePrice.value, 40), is_published: f.pub.checked, sort_order: row.sort_order, lesson_only: true };
+        if (file) {
+          newPath = `${uuid()}.pdf`; const up = await sb.storage.from('pdfs').upload(newPath, file, { contentType: 'application/pdf', upsert: false }); if (up.error) throw up.error;
+          if (own) { const r = await sb.from('pdf_files').update({ ...pdfRow, file_path: newPath }).eq('id', own.id); if (r.error) throw r.error; oldOwnPath = own.file_path; row.pdf_id = own.id; }
+          else { const r = await sb.from('pdf_files').insert({ ...pdfRow, file_path: newPath }).select().single(); if (r.error) throw r.error; newPdfId = r.data.id; row.pdf_id = newPdfId; }
+        } else if (keepOwn) {
+          const r = await sb.from('pdf_files').update(pdfRow).eq('id', own.id); if (r.error) throw r.error; row.pdf_id = own.id;
+        } else if (f.pdf.value === '__none') { row.pdf_id = null; row.bundle_price_egp = null; }
+        else if (f.pdf.value) { row.pdf_id = f.pdf.value; }
+        else { row.pdf_id = it && it.pdf_id ? it.pdf_id : null; if (!row.pdf_id) row.bundle_price_egp = null; }
         let id = it && it.id;
         if (it) { const r = await sb.from('lessons').update(row).eq('id', id); if (r.error) throw r.error; }
         else { const r = await sb.from('lessons').insert(row).select().single(); if (r.error) throw r.error; id = r.data.id; }
@@ -319,7 +360,7 @@
     const form = h('form', { style: 'max-width:640px', novalidate: true },
       sec('حالة صفحة التسجيل', h('p', { class: 'pf-sub', style: 'margin-bottom:1rem' }, 'الحالة الحالية: ', h('strong', { text: (MODES.find((m) => m[0] === (settings.registration_mode || 'registration')) || MODES[0])[1] })), modeBox, field('رسالة القفل (تظهر لما التسجيل يكون مقفول)', closedMsg)),
       sec('أرقام التواصل (تتطبق على كل لينكات الواتساب والاتصال في الموقع)', h('div', { class: 'pf-row' }, field('رقم الواتساب', wa), field('رقم الاتصال', ph)), h('p', { class: 'pf-sub', style: 'margin:0', text: 'أسعار الاشتراك والخطط بتتعدل من تبويب «الخطط».' })),
-      sec('جروبات الواتساب (تظهر بعد التسجيل)', field('جروب الصف الأول', g1), field('جروب الصف الثاني', g2)),
+      sec('جروبات الواتساب (تظهر بعد التسجيل)', h('p', { class: 'pf-sub', style: 'margin:0', text: 'لينك جروب كل صف بقى بيتحدد من تبويب «🎓 الصفوف» (وتقدر تضيف أي صف جديد هناك).' })),
       sec('الدفع والأسعار', h('div', { class: 'pf-row' }, field('رقم إنستا باي', insta), field('رقم WE Pay', we)), field('السعر الافتراضي للحصة الجديدة (جنيه)', dprice)),
       btn, msg);
     form.addEventListener('submit', async (e) => {
@@ -342,6 +383,42 @@
     content.replaceChildren(form);
   }
 
+  /* =============== الصفوف (أي صف في أي مرحلة) =============== */
+  const WA_GROUP_RE = /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+(\?[^\s]*)?$/;
+  function gradeForm(it) {
+    const name = h('input', { class: 'form-input', type: 'text', maxlength: '60', placeholder: 'مثال: الصف الثالث الإعدادي', value: it ? it.name : '', disabled: !!it });
+    const link = h('input', { class: 'form-input', type: 'text', dir: 'ltr', placeholder: 'https://chat.whatsapp.com/…', value: it ? it.whatsapp_group : '' });
+    const sort = h('input', { class: 'form-input', type: 'number', min: '0', step: '1', value: it ? it.sort_order : (allGrades.length + 1) * 10 });
+    const msg = h('p', { class: 'pf-msg', role: 'alert' }), btn = h('button', { class: 'pf-btn', type: 'submit' }, it ? 'حفظ' : 'إضافة');
+    const form = h('form', { novalidate: true },
+      field('اسم الصف', name, it ? 'الاسم مش بيتغيّر بعد الإضافة (اخفِ الصف وأضف صف جديد لو عايز اسم تاني).' : 'اكتب اسم الصف كامل في أي مرحلة (ابتدائي / إعدادي / ثانوي / غيره).'),
+      field('لينك جروب الواتساب (اختياري)', link, 'بيظهر للطالب بعد التسجيل.'), field('الترتيب', sort, 'الأصغر يظهر أولًا.'), btn, msg);
+    const m = openModal({ title: it ? 'تعديل الصف' : 'صف جديد', body: form });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); msg.className = 'pf-msg err';
+      const n = name.value.trim().replace(/\s+/g, ' ');
+      if (!it && (n.length < 2 || n.length > 60)) return (msg.textContent = 'اسم الصف لازم يكون من 2 لـ 60 حرف.');
+      if (!it && allGrades.some((g) => g.name === n)) return (msg.textContent = 'الصف ده موجود بالفعل.');
+      const l = link.value.trim(); if (l && !WA_GROUP_RE.test(l)) return (msg.textContent = 'رابط جروب الواتساب غير صحيح (لازم يبدأ بـ https://chat.whatsapp.com/).');
+      btn.disabled = true;
+      const row = { whatsapp_group: l, sort_order: numberOr(sort.value, 100) };
+      const r = it ? await sb.from('grades').update(row).eq('id', it.id) : await sb.from('grades').insert({ name: n, ...row });
+      if (r.error) { btn.disabled = false; msg.textContent = friendlyError(r.error); return; }
+      m.close(); toast('تم الحفظ ✅'); await loadCatalog(); render();
+    });
+  }
+  function renderGrades() {
+    toolbar.replaceChildren(h('button', { class: 'pf-btn', type: 'button', onclick: () => gradeForm() }, '＋ صف جديد'));
+    if (!allGrades.length) return empty('قايمة الصفوف لسه ما اتفعّلتش. شغّل ملف 08_grades_and_admin_speed.sql في Supabase.');
+    content.replaceChildren(h('div', { class: 'pf-grid' }, allGrades.map((g) => h('article', { class: 'pf-card glass-card' },
+      h('div', { class: 'pf-meta' }, h('span', { class: 'pf-badge ' + (g.is_active ? 'ok' : 'off') }, g.is_active ? 'ظاهر للطلاب' : 'مخفي'), h('span', { class: 'pf-badge info' }, g.whatsapp_group ? 'جروب واتساب ✓' : 'بدون جروب')),
+      h('h3', { text: g.name }),
+      h('div', { class: 'pf-actions' },
+        h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: () => gradeForm(g) }, 'تعديل'),
+        h('button', { class: 'pf-btn ghost sm', type: 'button', onclick: async () => { const r = await sb.from('grades').update({ is_active: !g.is_active }).eq('id', g.id); if (r.error) return fail(r.error); await loadCatalog(); render(); } }, g.is_active ? 'إخفاء' : 'إظهار'),
+        h('button', { class: 'pf-btn danger sm', type: 'button', onclick: async () => { if (!confirm(`حذف الصف "${g.name}"؟`)) return; const r = await sb.rpc('delete_grade', { p_name: g.name }); if (r.error) return toast(r.error.message || friendlyError(r.error), 'err'); toast('تم الحذف'); await loadCatalog(); render(); } }, 'حذف'))))));
+  }
+
   /* =============== الخطط =============== */
   const planTxt = (p) => (p.price_egp === 0 ? 'مجانًا' : `${p.price_egp} جنيه` + (p.months === 1 ? ' / شهر' : ` / ${p.months} شهور`));
   function renderPlans() {
@@ -361,7 +438,7 @@
   function planForm(it) {
     const f = {
       name: h('input', { class: 'form-input', type: 'text', maxlength: '80', value: it ? it.name : '' }),
-      grade: h('select', { class: 'form-input' }, h('option', { value: 'all' }, 'كل الصفوف'), ...GRADES.map((g) => h('option', { value: g }, g))),
+      grade: h('select', { class: 'form-input' }, h('option', { value: 'all' }, 'كل الصفوف'), ...gradeNames().map((g) => h('option', { value: g }, g))),
       kind: h('select', { class: 'form-input' }, h('option', { value: 'subscription' }, '⭐ اشتراك (الطالب بيشتريه من صفحة الاشتراك)'), h('option', { value: 'info' }, 'عرض فقط (زر تواصل)')),
       price: h('input', { class: 'form-input', type: 'number', min: '0', step: '1', value: it ? it.price_egp : 150 }),
       months: h('input', { class: 'form-input', type: 'number', min: '1', max: '12', step: '1', value: it ? it.months : 1 }),
@@ -500,8 +577,12 @@
   /* =============== التنقل =============== */
   function render() {
     $$('#tabs .pf-tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
-    ({ orders: renderOrders, subs: renderSubs, registrations: renderRegistrations, lessons: renderLessons, pdfs: renderPdfs, plans: renderPlans, content: renderContent, students: renderStudents, settings: renderSettings })[tab]();
+    ({ orders: renderOrders, subs: renderSubs, registrations: renderRegistrations, lessons: renderLessons, pdfs: renderPdfs, plans: renderPlans, grades: renderGrades, content: renderContent, students: renderStudents, settings: renderSettings })[tab]();
   }
   $$('#tabs .pf-tab').forEach((t) => t.addEventListener('click', () => { tab = t.dataset.tab; render(); }));
-  await loadCatalog(); refreshCounts(); render();
+  const catP = loadCatalog();                                                     // بالتوازي مع تحميل البروفايل
+  pre.orders = sb.rpc('admin_orders', { p_status: 'pending', p_limit: 300 });     // أول قايمة طلبات جاهزة قبل ما نفتح التبويب
+  const ctx = await ctxP; if (!ctx) return;
+  renderHeader({ active: 'admin', profile: ctx.profile });
+  await catP; refreshCounts(); render();
 })();

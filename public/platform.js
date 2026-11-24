@@ -32,7 +32,18 @@
     return e;
   }
 
-  const GRADES = ['الصف الأول الثانوي', 'الصف الثاني الثانوي'];
+  const GRADES = ['الصف الأول الثانوي', 'الصف الثاني الثانوي'];   // افتراضي لحد ما قايمة الصفوف تتحمّل
+  const GRADE_INFO = {};                                              // اسم الصف ← { whatsapp_group }
+  const applyGrades = (rows) => { GRADES.length = 0; rows.forEach((r) => { GRADES.push(r.name); GRADE_INFO[r.name] = { whatsapp_group: r.whatsapp_group || '' }; }); };
+  try { const c = JSON.parse(localStorage.getItem('mh_grades') || 'null'); if (Array.isArray(c) && c.length) applyGrades(c); } catch (e) { /* تجاهل */ }
+  // الصفوف الظاهرة من جدول grades (لو الجدول مش موجود بنفضل على الافتراضي)
+  async function loadGrades() {
+    try {
+      const { data, error } = await sb.from('grades').select('name,whatsapp_group').eq('is_active', true).order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+      if (!error && data && data.length) { applyGrades(data); try { localStorage.setItem('mh_grades', JSON.stringify(data)); } catch (e) { /* تجاهل */ } }
+    } catch (e) { /* تجاهل */ }
+    return GRADES;
+  }
   const PHONE_RE = /^01[0125][0-9]{8}$/;
   const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
   const fmtDate = (s) => { try { return new Date(s).toLocaleString('ar-EG-u-nu-latn', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
@@ -217,5 +228,5 @@
   }
 
   window.MH = { sb, $, $$, h, toast, openModal, friendlyError, getUser, getProfile, requireUser, loadSettings, renderHeader, passwordModal,
-    normalizeVideo, detectProvider, embedUrl, buildPlayer, GRADES, PHONE_RE, uuid, fmtDate, gradeLabel, CFG };
+    normalizeVideo, detectProvider, embedUrl, buildPlayer, GRADES, GRADE_INFO, loadGrades, PHONE_RE, uuid, fmtDate, gradeLabel, CFG };
 })();

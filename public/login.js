@@ -3,6 +3,8 @@
   const { sb, $, $$, friendlyError, PHONE_RE } = window.MH || {};
   const M_CFG = () => (window.MH || {}).CFG;
   if (!sb) return;
+  { const gs = $('#suGrade');   // قايمة الصفوف الحقيقية بدل الصفين الثابتين
+    if (gs && window.MH.loadGrades) window.MH.loadGrades().then((list) => { const cur = gs.value; gs.replaceChildren(new Option('اختر الصف', ''), ...list.map((g) => new Option(g, g))); gs.value = list.includes(cur) ? cur : ''; }); }
 
   const NEXT_ALLOWED = ['lessons.html', 'admin.html', 'index.html', 'register.html'];
   const nextPage = () => {
