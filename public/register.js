@@ -22,10 +22,12 @@
   const say = (el, text, type) => { el.textContent = text || ''; el.className = 'pf-msg' + (type ? ' ' + type : ''); };
 
   async function loadSettings() {
-    const { data, error } = await sb.from('settings').select('key,value');
-    if (error) throw error;
-    (data || []).forEach((r) => { S[r.key] = r.value; });
-    const pl = await sb.from('plans').select('*').eq('kind', 'subscription').eq('is_active', true).order('sort_order', { ascending: true }).order('created_at', { ascending: true });
+    const [st, pl] = await Promise.all([
+      sb.from('settings').select('key,value'),
+      sb.from('plans').select('*').eq('kind', 'subscription').eq('is_active', true).order('sort_order', { ascending: true }).order('created_at', { ascending: true })
+    ]);
+    if (st.error) throw st.error;
+    (st.data || []).forEach((r) => { S[r.key] = r.value; });
     PLANS = pl.data || [];
   }
 

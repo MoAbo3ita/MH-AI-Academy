@@ -3,35 +3,31 @@
   const M = window.MH; if (!M) return;
   const { sb, h, $, $$, toast, openModal, friendlyError, requireUser, renderHeader, loadSettings, buildPlayer, PHONE_RE, uuid, GRADES, fmtDate, gradeLabel, CFG } = M;
 
+  // نبدأ تحميل الحصص/الملفات/الطلبات فورًا بالتوازي مع البروفايل (بدل ما نستنى البروفايل الأول)
+  const fetchAll = (uid) => Promise.all([
+    sb.from('lessons').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+    sb.from('pdf_files').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
+    sb.from('orders').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+    loadSettings()
+  ]);
+  let early = M.getUser().then((u) => (u ? fetchAll(u.id) : null)).catch(() => null);
   const ctx = await requireUser(); if (!ctx) return;
   const { user, profile } = ctx;
   renderHeader({ active: 'lessons', profile });
 
-<<<<<<< HEAD
-  let settings = {}, lessons = [], allLessons = [], pdfs = [], orders = [];
-=======
   let settings = {}, lessons = [], allLessons = [], pdfs = [], libPdfs = [], orders = [];
->>>>>>> 55b4195 (update)
   let tab = 'lessons';
   let gradeFilter = profile.grade || '';
   const content = $('#content'), toolbar = $('#toolbar');
 
   /* ---------- تحميل البيانات ---------- */
   async function load() {
-    const [l, p, o, s] = await Promise.all([
-      sb.from('lessons').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-      sb.from('pdf_files').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true }),
-      sb.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-      loadSettings()
-    ]);
+    const pre = early; early = null;   // أول مرة: النتيجة جاهزة من التحميل المبكر
+    const [l, p, o, s] = (pre && (await pre)) || (await fetchAll(user.id));
     const firstErr = l.error || p.error || o.error;
     if (firstErr) toast(friendlyError(firstErr), 'err');
     // الأدمن يقرأ كل شيء (حتى المخفي) بحكم الصلاحيات؛ هنا نعرض للطالب المنشور فقط
-<<<<<<< HEAD
-    allLessons = l.data || []; lessons = allLessons.filter((x) => x.is_published); pdfs = (p.data || []).filter((x) => x.is_published); orders = o.data || []; settings = s || {};
-=======
     allLessons = l.data || []; lessons = allLessons.filter((x) => x.is_published); pdfs = (p.data || []).filter((x) => x.is_published); libPdfs = pdfs.filter((x) => !x.lesson_only); orders = o.data || []; settings = s || {};
->>>>>>> 55b4195 (update)
     $('#subtitle').textContent = 'الحصص المجانية تفتح فورًا، والحصص المدفوعة تتفعّل بعد مراجعة الدفع.';
     renderSubBanner();
   }
@@ -57,15 +53,10 @@
   function actions(type, item) {
     const open = type === 'lesson' ? () => openLesson(item) : () => openPdf(item);
     const openLabel = type === 'lesson' ? '▶ شاهد الحصة' : '⬇ فتح الملف';
-<<<<<<< HEAD
-    if (hasAccess(type, item)) return h('button', { class: 'pf-btn', type: 'button', onclick: open }, openLabel);
-    const out = [];
-=======
     const lf = type === 'lesson' && item.pdf_id ? pdfs.find((p) => p.id === item.pdf_id && p.lesson_only) : null;   // ملف الحصة (لو اشتراه لوحده يفتحه من هنا)
     const fileBtn = lf && hasAccess('pdf', lf) ? h('button', { class: 'pf-btn ghost', type: 'button', onclick: () => openPdf(lf) }, '⬇ ملف الحصة') : null;
     if (hasAccess(type, item)) return fileBtn ? [h('button', { class: 'pf-btn', type: 'button', onclick: open }, openLabel), fileBtn] : h('button', { class: 'pf-btn', type: 'button', onclick: open }, openLabel);
     const out = []; if (fileBtn) out.push(fileBtn);
->>>>>>> 55b4195 (update)
     const bf = type === 'lesson' ? bundleFile(item) : null;
     if (bf && canBuy(item) && !hasAccess('pdf', bf) && !pendingFor(item)) {   // اختيار: حصة / ملف / الاتنين
       out.push(h('button', { class: 'pf-btn', type: 'button', onclick: () => openChoice(item, bf) }, `اشترِ (من ${Math.min(item.price_egp, bf.price_egp, item.bundle_price_egp)} ج)`));
@@ -155,11 +146,7 @@
     const sum = lesson.price_egp + pdf.price_egp, save = sum - lesson.bundle_price_egp;
     const opts = [
       { v: 'lesson', t: 'الحصة فقط', p: lesson.price_egp, off: lOwned || pendingFor(lesson) },
-<<<<<<< HEAD
-      { v: 'pdf', t: 'الملف فقط: ' + pdf.title, p: pdf.price_egp, off: fOwned || orders.some((o) => o.item_type === 'pdf' && o.item_id === pdf.id && o.status === 'pending') },
-=======
       { v: 'pdf', t: 'الملف فقط' + (pdf.lesson_only ? '' : ': ' + pdf.title), p: pdf.price_egp, off: fOwned || orders.some((o) => o.item_type === 'pdf' && o.item_id === pdf.id && o.status === 'pending') },
->>>>>>> 55b4195 (update)
       { v: 'bundle', t: 'الحصة + الملف (باقة)', p: lesson.bundle_price_egp, off: lOwned || fOwned || pendingFor(lesson), note: save > 0 ? `وفّر ${save} ج` : '' }
     ];
     let pick = (opts.find((o) => !o.off) || {}).v;
